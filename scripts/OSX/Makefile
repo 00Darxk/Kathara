@@ -25,7 +25,7 @@ deps: py_env
 	$(VENV_DIR)/bin/pip install "pyinstaller==6.18.0"
 	$(VENV_DIR)/bin/pip install -r ../../src/requirements.txt
 	$(VENV_DIR)/bin/pip install pytest
-	$$(brew --prefix ruby)/bin/gem install ronn-ng --user-install
+	gem install ronn-ng
 
 manpages:
 	cd ../../docs && make roff-build;
