@@ -1,0 +1,94 @@
+name: Build and Test
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-and-test:
+    name: Build ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: "Linux Deb"
+            os: ubuntu-24.04
+            target: linux-deb
+          - name: "Arch Pkg"
+            os: ubuntu-24.04
+            target: linux-pkg
+          - name: "Linux Rpm"
+            os: ubuntu-24.04
+            target: linux-rpm
+          - name: "Windows Installer"
+            os: ubuntu-24.04
+            target: windows
+          - name: "macOS Intel (x86_64)"
+            os: macos-26-intel
+            target: macos-x86
+          - name: "macOS ARM (Apple Silicon)"
+            os: macos-26
+            target: macos-arm64
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10   #v6.0.3
+
+      - name: Setup python env
+        uses: ./.github/actions/setup-python-build
+        with:
+          python-version: 3.13.11
+
+      - name: Get Kathara Version
+        id: get-version
+        run: |
+          echo "version=$(cat ./src/Kathara/version.py | grep CURRENT_VERSION | sed -r -e 's/^.*"(.*)"$/\1/g')" >> $GITHUB_OUTPUT
+        shell: bash
+
+      
+      - name: Build Deb Package
+        if: matrix.target == 'linux-deb'
+        run: | 
+          cd ./scripts/Linux-Deb
+          sed -i -e "s|__KATHARA_VERSION__|${{ steps.get-version.outputs.version }}|g" Makefile
+          make docker-unsigned_$DISTRO
+
+      - name: Build Pkg Package
+        if: matrix.target == 'linux-pkg'
+        run: |
+          cd ./scripts/Linux-Pkg/
+          sed -i -e "s|__KATHARA_VERSION__|${{ steps.get-version.outputs.version }}|g" Makefile
+          make all
+
+      - name: Build Rpm Package
+        if: matrix.target == 'linux-rpm'
+        run: | 
+          cd ./scripts/Linux-Rpm
+          sed -i -e "s|__KATHARA_VERSION__|${{ steps.get-version.outputs.version }}|g" Makefile
+          make all
+
+      - name: Build Windows Installer
+        if: matrix.target == 'windows'
+        run: | 
+          cd ./scripts/Windows/
+          sed -i -e "s|__KATHARA_VERSION__|${{ steps.get-version.outputs.version }}|g" Makefile
+          make all
+
+      - name: Build macOS x86_64
+        if: matrix.target == 'macos-x86'
+        run: |
+          cd ./scripts/OSX
+          sed -i '' -e "s|__KATHARA_VERSION__|${{ steps.get-version.outputs.version }}|g" Makefile
+          make all_x86
+
+      - name: Build macOS ARM64
+        if: matrix.target == 'macos-arm64'
+        run: |
+          cd ./scripts/OSX
+          sed -i '' -e "s|__KATHARA_VERSION__|${{ steps.get-version.outputs.version }}|g" Makefile
+          make all_arm64
+      
+      - name: Run Placeholder Test
+        run: python -m pytest ./tests/placeholder_test.py
+        shell: bash
