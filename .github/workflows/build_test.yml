@@ -42,39 +42,39 @@ jobs:
         run: python -m pytest
 
 #================================================================================================
-  deb:
-    name: deb-${{ matrix.distro }}-${{ matrix.arch }}
-    needs : [test,prepare]
-    runs-on: ${{ matrix.runs-on }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - { distro: jammy, arch: amd64, runs-on: ubuntu-24.04 }
-          - { distro: jammy, arch: arm64, runs-on: ubuntu-24.04-arm }
-          - { distro: noble, arch: amd64, runs-on: ubuntu-24.04 }
-          - { distro: noble, arch: arm64, runs-on: ubuntu-24.04-arm }
-    steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10   # v6.0.3
-      - name: Cache Deb Package
-        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae   # v5.0.5
-        id: cache-deb
-        with:
-          path: scripts/Linux-Deb/Output
-          key: deb-${{ matrix.distro }}-${{ matrix.arch }}-${{ needs.prepare.outputs.version }}-${{ hashFiles('src/**', 'scripts/Linux-Deb/**') }}
-      - name: Build Deb Package
-        if: steps.cache-deb.outputs.cache-hit != 'true'
-        shell: bash
-        run: |
-          cd scripts/Linux-Deb
-          sed -i -e "s|__KATHARA_VERSION__|${{ needs.prepare.outputs.version }}|g" Makefile
-          make docker-unsigned_${{ matrix.distro }}
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a   #v7.0.1
-        with:
-          name: deb-${{ matrix.distro }}-${{ matrix.arch }}
-          path: scripts/Linux-Deb/Output
-          if-no-files-found: warn
-          retention-days: 7
+  # deb:
+  #   name: deb-${{ matrix.distro }}-${{ matrix.arch }}
+  #   needs : [test,prepare]
+  #   runs-on: ${{ matrix.runs-on }}
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       include:
+  #         - { distro: jammy, arch: amd64, runs-on: ubuntu-24.04 }
+  #         - { distro: jammy, arch: arm64, runs-on: ubuntu-24.04-arm }
+  #         - { distro: noble, arch: amd64, runs-on: ubuntu-24.04 }
+  #         - { distro: noble, arch: arm64, runs-on: ubuntu-24.04-arm }
+  #   steps:
+  #     - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10   # v6.0.3
+  #     - name: Cache Deb Package
+  #       uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae   # v5.0.5
+  #       id: cache-deb
+  #       with:
+  #         path: scripts/Linux-Deb/Output
+  #         key: deb-${{ matrix.distro }}-${{ matrix.arch }}-${{ needs.prepare.outputs.version }}-${{ hashFiles('src/**', 'scripts/Linux-Deb/**') }}
+  #     - name: Build Deb Package
+  #       if: steps.cache-deb.outputs.cache-hit != 'true'
+  #       shell: bash
+  #       run: |
+  #         cd scripts/Linux-Deb
+  #         sed -i -e "s|__KATHARA_VERSION__|${{ needs.prepare.outputs.version }}|g" Makefile
+  #         make docker-unsigned_${{ matrix.distro }}
+  #     - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a   #v7.0.1
+  #       with:
+  #         name: deb-${{ matrix.distro }}-${{ matrix.arch }}
+  #         path: scripts/Linux-Deb/Output
+  #         if-no-files-found: warn
+  #         retention-days: 7
 
 #================================================================================================
   rpm:
