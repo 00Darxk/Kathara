@@ -18,7 +18,7 @@ allSigned_arm64: cleanall deps binary_arm64 manpages createInstaller_arm64 signP
 default: all
 
 py_env:
-	python3.13 -m venv $(VENV_DIR)
+	python3 -m venv $(VENV_DIR)
 
 deps: py_env
 	$(VENV_DIR)/bin/pip install -U "setuptools<81"
