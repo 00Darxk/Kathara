@@ -182,12 +182,20 @@ jobs:
           - { arch: x86_64, make: all_x86,   runs-on: macos-26-intel }
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10   # v6.0.3
+      - name: Cache OSX Package
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae   # v5.0.5
+        id: cache-osx
+        with:
+          path: scripts/OSX/Output
+          key: pkg-${{ needs.prepare.outputs.version }}-${{ hashFiles('src/**', 'scripts/Linux-Pkg/**') }}
       - uses: ./.github/actions/setup-python-build
         with:
           python-version: '3.13'
       - name: Install Ruby
+        if: steps.cache-osx.outputs.cache-hit != 'true'
         run: brew install ruby
       - name: Build macOS installer
+        if: steps.cache-osx.outputs.cache-hit != 'true'
         shell: bash
         run: |
           cd scripts/OSX
