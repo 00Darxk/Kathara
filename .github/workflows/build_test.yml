@@ -137,37 +137,39 @@ jobs:
           retention-days: 7
 
 #================================================================================================
-#   windows:
-#     name: windows-${{ matrix.arch }}
-#     needs : [test,prepare]
-#     runs-on: ${{ matrix.runs-on }}
-#     strategy:
-#       fail-fast: false
-#       matrix:
-#         include:
-#           - { arch: x64,   runs-on: windows-2025 }
-#           - { arch: arm64, runs-on: windows-11-arm }
-#     steps:
-#       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10   # v6.0.3
-#       - uses: ./.github/actions/setup-python-build
-#         with:
-#           python-version: '3.13'
-#       - name: Install Inno Setup
-#         shell: pwsh
-#         run: |
-#           choco install innosetup -y --no-progress
-#           "C:\Program Files (x86)\Inno Setup 6" | Out-File -FilePath $env:GITHUB_PATH -Append
-#       - name: Build Windows installer
-#         shell: cmd
-#         run: |
-#           cd scripts\Windows\windows
-#           WindowsBuild.bat ${{ needs.prepare.outputs.version }} ${{ matrix.arch }}
-#       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a   #v7.0.1
-#         with:
-#           name: windows-${{ matrix.arch }}
-#           path: scripts/Windows/Output
-#           if-no-files-found: warn
-#           retention-days: 7
+  # windows:
+  #   name: windows-${{ matrix.arch }}
+  #   needs : [test,prepare]
+  #   runs-on: ${{ matrix.runs-on }}
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       include:
+  #         - { arch: x64,   runs-on: windows-2025 }
+  #         - { arch: arm64, runs-on: windows-11-arm }
+  #   steps:
+  #     - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10   # v6.0.3
+  #     - uses: ./.github/actions/setup-python-build
+  #       with:
+  #         python-version: '3.13'
+  #     - name: Cache Windows Installer
+  #       id: cache-win
+  #       uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae    #v5.0.5
+  #       with:
+  #         path: ./scripts/Windows/Output
+  #         key: win-${{ needs.prepare.outputs.version }}-${{ hashFiles('src/**', 'scripts/Windows/**') }}
+  #     - name: Build Windows Installer
+  #       if: steps.cache-win.outputs.cache-hit != 'true'
+  #       run: | 
+  #         cd ./scripts/Windows/
+  #         sed -i -e "s|__KATHARA_VERSION__|${{ needs.prepare.outputs.version }}|g" Makefile
+  #         make all
+  #     - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a   #v7.0.1
+  #       with:
+  #         name: windows-${{ matrix.arch }}
+  #         path: scripts/Windows/Output
+  #         if-no-files-found: warn
+  #         retention-days: 7
 
 # #================================================================================================
   macos:
