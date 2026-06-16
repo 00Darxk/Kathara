@@ -1,94 +1,200 @@
-name: Build and Test
-
+name: build-a
 on:
   workflow_dispatch:
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: build-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
 
 jobs:
-  build-and-test:
-    name: Build ${{ matrix.name }}
-    runs-on: ${{ matrix.os }}
 
+  prepare:
+    name: Prepare Environment
+    runs-on: ubuntu-24.04
+    outputs:
+      version: ${{ steps.get_version.outputs.v }}
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10   # v6.0.3
+      - id: get_version
+        shell: bash
+        run: echo "v=$(grep CURRENT_VERSION src/Kathara/version.py | sed -E 's/.*"(.*)".*/\1/')" >> "$GITHUB_OUTPUT"
+
+  test:
+    name: pytest (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, windows-2025, macos-26]
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10   #v6.0.3
+      - uses: ./.github/actions/setup-python-build
+        with:
+          python-version: '3.13'
+
+      - name: Run PyTest
+        shell: bash
+        run: python -m pytest
+
+#================================================================================================
+  deb:
+    name: deb-${{ matrix.distro }}-${{ matrix.arch }}
+    needs : [test,prepare]
+    runs-on: ${{ matrix.runs-on }}
     strategy:
       fail-fast: false
       matrix:
         include:
-          - name: "Linux Deb"
-            os: ubuntu-24.04
-            target: linux-deb
-          - name: "Arch Pkg"
-            os: ubuntu-24.04
-            target: linux-pkg
-          - name: "Linux Rpm"
-            os: ubuntu-24.04
-            target: linux-rpm
-          - name: "Windows Installer"
-            os: ubuntu-24.04
-            target: windows
-          - name: "macOS Intel (x86_64)"
-            os: macos-26-intel
-            target: macos-x86
-          - name: "macOS ARM (Apple Silicon)"
-            os: macos-26
-            target: macos-arm64
-
+          - { distro: jammy, arch: amd64, runs-on: ubuntu-24.04 }
+          - { distro: jammy, arch: arm64, runs-on: ubuntu-24.04-arm }
+          - { distro: noble, arch: amd64, runs-on: ubuntu-24.04 }
+          - { distro: noble, arch: arm64, runs-on: ubuntu-24.04-arm }
     steps:
-      - name: Checkout code
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10   #v6.0.3
-
-      - name: Setup python env
-        uses: ./.github/actions/setup-python-build
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10   # v6.0.3
+      - name: Cache Deb Package
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae   # v5.0.5
+        id: cache-deb
         with:
-          python-version: 3.13.11
-
-      - name: Get Kathara Version
-        id: get-version
-        run: |
-          echo "version=$(cat ./src/Kathara/version.py | grep CURRENT_VERSION | sed -r -e 's/^.*"(.*)"$/\1/g')" >> $GITHUB_OUTPUT
-        shell: bash
-
-      
+          path: scripts/Linux-Deb/Output
+          key: deb-${{ matrix.distro }}-${{ matrix.arch }}-${{ needs.prepare.outputs.version }}-${{ hashFiles('src/**', 'scripts/Linux-Deb/**') }}
       - name: Build Deb Package
-        if: matrix.target == 'linux-deb'
-        run: | 
-          cd ./scripts/Linux-Deb
-          sed -i -e "s|__KATHARA_VERSION__|${{ steps.get-version.outputs.version }}|g" Makefile
-          make docker-unsigned_$DISTRO
-
-      - name: Build Pkg Package
-        if: matrix.target == 'linux-pkg'
-        run: |
-          cd ./scripts/Linux-Pkg/
-          sed -i -e "s|__KATHARA_VERSION__|${{ steps.get-version.outputs.version }}|g" Makefile
-          make all
-
-      - name: Build Rpm Package
-        if: matrix.target == 'linux-rpm'
-        run: | 
-          cd ./scripts/Linux-Rpm
-          sed -i -e "s|__KATHARA_VERSION__|${{ steps.get-version.outputs.version }}|g" Makefile
-          make all
-
-      - name: Build Windows Installer
-        if: matrix.target == 'windows'
-        run: | 
-          cd ./scripts/Windows/
-          sed -i -e "s|__KATHARA_VERSION__|${{ steps.get-version.outputs.version }}|g" Makefile
-          make all
-
-      - name: Build macOS x86_64
-        if: matrix.target == 'macos-x86'
-        run: |
-          cd ./scripts/OSX
-          sed -i '' -e "s|__KATHARA_VERSION__|${{ steps.get-version.outputs.version }}|g" Makefile
-          make all_x86
-
-      - name: Build macOS ARM64
-        if: matrix.target == 'macos-arm64'
-        run: |
-          cd ./scripts/OSX
-          sed -i '' -e "s|__KATHARA_VERSION__|${{ steps.get-version.outputs.version }}|g" Makefile
-          make all_arm64
-      
-      - name: Run Placeholder Test
-        run: python -m pytest ./tests/placeholder_test.py
+        if: steps.cache-deb.outputs.cache-hit != 'true'
         shell: bash
+        run: |
+          cd scripts/Linux-Deb
+          sed -i -e "s|__KATHARA_VERSION__|${{ needs.prepare.outputs.version }}|g" Makefile
+          make docker-unsigned_${{ matrix.distro }}
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a   #v7.0.1
+        with:
+          name: deb-${{ matrix.distro }}-${{ matrix.arch }}
+          path: scripts/Linux-Deb/Output
+          if-no-files-found: warn
+          retention-days: 7
+
+#================================================================================================
+  rpm:
+    name: rpm-${{ matrix.arch }}
+    needs : [test,prepare]
+    runs-on: ${{ matrix.runs-on }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { arch: x86_64,  runs-on: ubuntu-24.04 }
+          - { arch: aarch64, runs-on: ubuntu-24.04-arm }
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10   # v6.0.3
+      - name: Cache Rpm Package
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae   # v5.0.5
+        id: cache-rpm
+        with:
+          path: scripts/Linux-Rpm/Output
+          key: rpm-${{ matrix.arch }}-${{ needs.prepare.outputs.version }}-${{ hashFiles('src/**', 'scripts/Linux-Rpm/**') }}
+      - name: Build Rpm Package
+        if: steps.cache-rpm.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          cd scripts/Linux-Rpm
+          sed -i -e "s|__KATHARA_VERSION__|${{ needs.prepare.outputs.version }}|g" Makefile
+          make all
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a   #v7.0.1
+        with:
+          name: rpm-${{ matrix.arch }}
+          path: scripts/Linux-Rpm/Output
+          if-no-files-found: warn
+          retention-days: 7
+
+#================================================================================================
+  pkg:
+    name: pkg-any
+    needs : [test,prepare]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10   # v6.0.3
+      - name: Cache Pkg Package
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae   # v5.0.5
+        id: cache-pkg
+        with:
+          path: scripts/Linux-Pkg/Output
+          key: pkg-${{ needs.prepare.outputs.version }}-${{ hashFiles('src/**', 'scripts/Linux-Pkg/**') }}
+      - name: Build Pkg Package
+        if: steps.cache-pkg.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          cd scripts/Linux-Pkg
+          sed -i -e "s|__KATHARA_VERSION__|${{ needs.prepare.outputs.version }}|g" Makefile
+          make all
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a   #v7.0.1
+        with:
+          name: pkg-any
+          path: scripts/Linux-Pkg/Output
+          if-no-files-found: warn
+          retention-days: 7
+
+#================================================================================================
+  windows:
+    name: windows-${{ matrix.arch }}
+    needs : [test,prepare]
+    runs-on: ${{ matrix.runs-on }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { arch: x64,   runs-on: windows-2025 }
+          - { arch: arm64, runs-on: windows-11-arm }
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10   # v6.0.3
+      - uses: ./.github/actions/setup-python-build
+        with:
+          python-version: '3.13'
+      - name: Install Inno Setup
+        shell: pwsh
+        run: |
+          choco install innosetup -y --no-progress
+          "C:\Program Files (x86)\Inno Setup 6" | Out-File -FilePath $env:GITHUB_PATH -Append
+      - name: Build Windows installer
+        shell: cmd
+        run: |
+          cd scripts\Windows\windows
+          WindowsBuild.bat ${{ needs.prepare.outputs.version }} ${{ matrix.arch }}
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a   #v7.0.1
+        with:
+          name: windows-${{ matrix.arch }}
+          path: scripts/Windows/Output
+          if-no-files-found: warn
+          retention-days: 7
+
+#================================================================================================
+  macos:
+    name: macos-${{ matrix.arch }}
+    needs : [test,prepare]
+    runs-on: ${{ matrix.runs-on }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { arch: arm64,  make: all_arm64, runs-on: macos-26 }
+          - { arch: x86_64, make: all_x86,   runs-on: macos-26-intel }
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10   # v6.0.3
+      - uses: ./.github/actions/setup-python-build
+        with:
+          python-version: '3.13'
+      - name: Install Ruby
+        run: brew install ruby
+      - name: Build macOS installer
+        shell: bash
+        run: |
+          cd scripts/OSX
+          make ${{ matrix.make }} VERSION=${{ needs.prepare.outputs.version }}
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a   #v7.0.1
+        with:
+          name: macos-${{ matrix.arch }}
+          path: scripts/OSX/Output
+          if-no-files-found: warn
+          retention-days: 7
