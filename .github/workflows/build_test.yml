@@ -170,32 +170,32 @@ jobs:
 #           retention-days: 7
 
 # #================================================================================================
-#   macos:
-#     name: macos-${{ matrix.arch }}
-#     needs : [test,prepare]
-#     runs-on: ${{ matrix.runs-on }}
-#     strategy:
-#       fail-fast: false
-#       matrix:
-#         include:
-#           - { arch: arm64,  make: all_arm64, runs-on: macos-26 }
-#           - { arch: x86_64, make: all_x86,   runs-on: macos-26-intel }
-#     steps:
-#       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10   # v6.0.3
-#       - uses: ./.github/actions/setup-python-build
-#         with:
-#           python-version: '3.13'
-#       - name: Install Ruby
-#         run: brew install ruby
-#       - name: Build macOS installer
-#         shell: bash
-#         run: |
-#           cd scripts/OSX
-#           sed -i '' -e "s|__KATHARA_VERSION__|${{ needs.prepare.outputs.version }}|g" Makefile
-#           make ${{ matrix.make }}
-#       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a   #v7.0.1
-#         with:
-#           name: macos-${{ matrix.arch }}
-#           path: scripts/OSX/Output
-#           if-no-files-found: warn
-#           retention-days: 7
+  macos:
+    name: macos-${{ matrix.arch }}
+    needs : [test,prepare]
+    runs-on: ${{ matrix.runs-on }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { arch: arm64,  make: all_arm64, runs-on: macos-26 }
+          - { arch: x86_64, make: all_x86,   runs-on: macos-26-intel }
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10   # v6.0.3
+      - uses: ./.github/actions/setup-python-build
+        with:
+          python-version: '3.13'
+      - name: Install Ruby
+        run: brew install ruby
+      - name: Build macOS installer
+        shell: bash
+        run: |
+          cd scripts/OSX
+          sed -i '' -e "s|__KATHARA_VERSION__|${{ needs.prepare.outputs.version }}|g" Makefile
+          make ${{ matrix.make }}
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a   #v7.0.1
+        with:
+          name: macos-${{ matrix.arch }}
+          path: scripts/OSX/Output
+          if-no-files-found: warn
+          retention-days: 7
