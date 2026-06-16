@@ -8,7 +8,7 @@ PACKAGE_VERSION=1
 all: clean docker-build-image docker-build
 
 docker-build: docker-build-image
-	docker run -ti --rm -v `pwd`/../../:/opt/kathara kathara/linux-build-rpm /bin/bash -c \
+	docker run --rm -v `pwd`/../../:/opt/kathara kathara/linux-build-rpm /bin/bash -c \
 		"make build && chown -R $(shell id -u):$(shell id -g) Output"
 
 docker-build-image:
