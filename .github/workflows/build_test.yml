@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-24.04
     outputs:
       version: ${{ steps.get_version.outputs.v }}
-      cache_hash: ${{ steps.hash.outputs.h }}
+      # cache_hash: ${{ steps.hash.outputs.h }}
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10   # v6.0.3
       - id: get_version
@@ -26,9 +26,9 @@ jobs:
         run: echo "v=$(grep CURRENT_VERSION src/Kathara/version.py | sed -E 's/.*"(.*)".*/\1/')" >> "$GITHUB_OUTPUT"
       - name: Print version
         run: echo "Kathará version is ${{ steps.get_version.outputs.v }}"
-      - id: hash
-        shell: bash
-        run: echo "h=${{ hashFiles('src/**', 'scripts/**') }}" >> "$GITHUB_OUTPUT"
+      # - id: hash
+      #   shell: bash
+      #   run: echo "h=${{ hashFiles('src/**', 'scripts/**') }}" >> "$GITHUB_OUTPUT"
 
 
   test:
@@ -68,7 +68,7 @@ jobs:
         id: cache-deb
         with:
           path: scripts/Linux-Deb/Output
-          key: deb-${{ matrix.distro }}-${{ matrix.arch }}-${{ needs.prepare.outputs.version }}-${{ needs.prepare.outputs.cache_hash }}
+          key: deb-${{ matrix.distro }}-${{ matrix.arch }}-${{ needs.prepare.outputs.version }}-${{ hashFiles('src/**', 'scripts/Linux-Deb/**') }}
       - name: Build Deb Package
         if: steps.cache-deb.outputs.cache-hit != 'true'
         shell: bash
