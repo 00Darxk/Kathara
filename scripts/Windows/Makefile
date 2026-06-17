@@ -22,9 +22,11 @@ all: clean docker-build-installer clean-assets
 docker-build-installer: docker-build-executable prepare-executable
 	chmod -R a+w Output && umask a+w
 	docker run --rm -v `pwd`/Output:/work amake/innosetup installer.iss
+	sudo chown -R $(shell id -u):$(shell id -g) Output
 
 docker-build-executable: docker-build-image-pyinstaller prepare-source
 	docker run --rm -v `pwd`/Output/src/:/src/ kathara/windows-pyinstaller
+	sudo chown -R $(shell id -u):$(shell id -g) Output
 
 docker-build-image-pyinstaller:
 	cd Docker-Windows-Build && cp Dockerfile_pyinstaller Dockerfile
