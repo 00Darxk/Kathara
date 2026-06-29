@@ -1,0 +1,21 @@
+name: 'Get Kathará version'
+description: 'Reads CURRENT_VERSION from src/Kathara/version.py and exposes it as an output'
+
+outputs:
+  version:
+    description: 'The version string declared in src/Kathara/version.py'
+    value: ${{ steps.get_version.outputs.version }}
+
+runs:
+  using: composite
+  steps:
+    - id: get_version
+      shell: bash
+      run: |
+        v="$(grep CURRENT_VERSION src/Kathara/version.py | sed -E 's/.*"(.*)".*/\1/')"
+        if [ -z "$v" ]; then
+          echo "::error file=src/Kathara/version.py::Could not parse CURRENT_VERSION"
+          exit 1
+        fi
+        echo "version=$v" >> "$GITHUB_OUTPUT"
+        echo "Kathará version is $v"
