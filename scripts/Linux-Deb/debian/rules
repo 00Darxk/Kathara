@@ -15,9 +15,10 @@ override_dh_auto_configure:
 	$(CURDIR)/venv/bin/pip3.13 install --no-index --find-links $(CURDIR)/debian/pythonLibs_$(ARCHITECTURE)/ $(CURDIR)/debian/pythonLibs_$(ARCHITECTURE)/*
 
 override_dh_auto_build:
-	$(CURDIR)/venv/bin/python3.13 -m nuitka --lto=no --show-progress --plugin-enable=pylint-warnings \
-		--follow-imports --standalone --include-plugin-directory=Kathara --include-package=rich --include-package-data=rich --output-filename=kathara kathara.py
-
+# 	$(CURDIR)/venv/bin/python3.13 -m nuitka --lto=no --show-progress --plugin-enable=pylint-warnings \
+# 		--follow-imports --standalone --include-plugin-directory=Kathara --include-package=rich --include-package-data=rich --output-filename=kathara kathara.py
+	$(CURDIR)/venv/bin/pyinstaller --onefile --distpath=./kathara.dist --workpath=./kathara.build kathara.spec
+	
 override_dh_auto_install:
 	rm -rf $(CURDIR)/debian/kathara/usr/lib/kathara/*
 	cp -r $(CURDIR)/kathara.dist/* $(CURDIR)/debian/kathara/usr/lib/kathara/
