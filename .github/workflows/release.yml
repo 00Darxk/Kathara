@@ -135,6 +135,41 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      # Checksums for all published .debs. GitLab verifies them post-download and 
+      # blocks publishing on mismatch to ensure cross-platform integrity.
+      #
+      # Filenames use only the basename. This matches how fetch-releases.sh expects 
+      # assets, and makes the step immune to download-artifact's folder structure 
+      # (flat vs. nested).
+      - name: Generate SHA256SUMS
+        working-directory: artifacts
+        run: |
+          set -euo pipefail
+
+          # Collect every .deb at any depth, guard against duplicate basenames
+          # (two different files that would collide as release assets).
+          mapfile -t debs < <(find . -type f -name '*.deb' | sort)
+          if [ ${#debs[@]} -eq 0 ]; then
+            echo "::error::no .deb artifacts to checksum"
+            exit 1
+          fi
+
+          dupes="$(printf '%s\n' "${debs[@]}" | xargs -n1 basename | sort | uniq -d)"
+          if [ -n "$dupes" ]; then
+            echo "::error::duplicate .deb basenames would collide as release assets:"
+            printf '%s\n' "$dupes"
+            exit 1
+          fi
+
+          : > SHA256SUMS
+          for f in "${debs[@]}"; do
+            # "<hash>  <basename>", regardless of the file's directory.
+            printf '%s  %s\n' "$(sha256sum "$f" | cut -d' ' -f1)" "$(basename "$f")" >> SHA256SUMS
+          done
+
+          echo "Checksummed ${#debs[@]} packages:"
+          cat SHA256SUMS
+
       - name: Create draft release
         uses: softprops/action-gh-release@2bb465e97f322d3cb2a965294d483e0d26a67aa9   # v3.0.1
         with:
