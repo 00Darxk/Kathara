@@ -135,12 +135,11 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # Checksums for all published .debs. GitLab verifies them post-download and 
-      # blocks publishing on mismatch to ensure cross-platform integrity.
+      # Checksums for all published .debs.
+      # GitLab verifies them post-download and blocks publishing on mismatch to ensure cross-platform integrity.
       #
-      # Filenames use only the basename. This matches how fetch-releases.sh expects 
-      # assets, and makes the step immune to download-artifact's folder structure 
-      # (flat vs. nested).
+      # Filenames use only the basename.
+      # This matches how fetch-releases.sh expects assets, and makes the step immune to download-artifact's folder structure (flat vs. nested).
       - name: Generate SHA256SUMS
         working-directory: artifacts
         run: |
