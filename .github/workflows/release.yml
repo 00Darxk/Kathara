@@ -135,7 +135,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # Checksums for all published .debs.
+      # Checksums over every published asset
       # GitLab verifies them post-download and blocks publishing on mismatch to ensure cross-platform integrity.
       #
       # Filenames use only the basename.
@@ -145,28 +145,36 @@ jobs:
         run: |
           set -euo pipefail
 
-          # Collect every .deb at any depth, guard against duplicate basenames
-          # (two different files that would collide as release assets).
-          mapfile -t debs < <(find . -type f -name '*.deb' | sort)
-          if [ ${#debs[@]} -eq 0 ]; then
-            echo "::error::no .deb artifacts to checksum"
+          # Every file at any depth, excluding a SHA256SUMS from a previous run so the checksum file never tries to hash itself.
+          mapfile -t assets < <(find . -type f ! -name 'SHA256SUMS' | sort)
+          if [ ${#assets[@]} -eq 0 ]; then
+            echo "::error::no artifacts to checksum"
             exit 1
           fi
 
-          dupes="$(printf '%s\n' "${debs[@]}" | xargs -n1 basename | sort | uniq -d)"
+          # Basenames must be unique: the release flattens everything to basename, and the GitLab side keys packages by basename too.
+          dupes="$(printf '%s\n' "${assets[@]}" | xargs -n1 basename | sort | uniq -d)"
           if [ -n "$dupes" ]; then
-            echo "::error::duplicate .deb basenames would collide as release assets:"
+            echo "::error::duplicate basenames would collide as release assets:"
             printf '%s\n' "$dupes"
             exit 1
           fi
 
           : > SHA256SUMS
-          for f in "${debs[@]}"; do
+          for f in "${assets[@]}"; do
             # "<hash>  <basename>", regardless of the file's directory.
             printf '%s  %s\n' "$(sha256sum "$f" | cut -d' ' -f1)" "$(basename "$f")" >> SHA256SUMS
           done
 
-          echo "Checksummed ${#debs[@]} packages:"
+          # Safety net for the GitLab contract: fail loudly if, for any reason, no .deb made it into the list.
+          # Everything else is optional; the .deb packages are not.
+          deb_count="$(grep -c '\.deb$' SHA256SUMS || true)"
+          if [ "$deb_count" -eq 0 ]; then
+            echo "::error::SHA256SUMS contains no .deb entries — the APT pipeline would have nothing to verify"
+            exit 1
+          fi
+
+          echo "Checksummed ${#assets[@]} assets ($deb_count .deb):"
           cat SHA256SUMS
 
       - name: Create draft release
