@@ -1,4 +1,4 @@
-# Triggers a GitLab pipeline via API to update the APT repository when a  stable GitHub Release is published (drafts and prereleases are ignored).
+# Triggers a GitLab pipeline via API to update the APT repository when a stable GitHub Release is published (drafts and prereleases are ignored).
 # Since GitLab can't parse native GitHub webhooks, this uses curl to pass the release tag.
 # It can be re-run manually via the Actions tab.
 #
@@ -112,8 +112,7 @@ jobs:
 
           echo "Triggering $GITLAB_API project $PROJECT_ID on ref '$GITLAB_REF' for release $TAG"
 
-          # -sS quiet but keep errors; capture body and HTTP code separately so
-          # a non-201 can be reported with GitLab's own message.
+          # -sS quiet but keep errors; capture body and HTTP code separately so a non-201 can be reported with GitLab's own message.
           body="$(mktemp)"
           code="$(curl -sS -o "$body" -w '%{http_code}' --request POST \
                     --form "token=$TRIGGER_TOKEN" \
@@ -126,8 +125,7 @@ jobs:
           if [ "$code" != "201" ]; then
             echo "::error::GitLab returned HTTP $code (expected 201)"
             cat "$body"
-            # 400 is almost always a wrong ref; 404 a wrong project id or token
-            # lacking access; 401/403 an invalid or revoked token.
+            # 400 is almost always a wrong ref; 404 a wrong project id or token lacking access; 401/403 an invalid or revoked token.
             case "$code" in
               400) echo "::error::check that ref '$GITLAB_REF' exists on the GitLab project" ;;
               401|403) echo "::error::the trigger token is invalid, revoked, or lacks access" ;;
