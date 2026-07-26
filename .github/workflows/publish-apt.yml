@@ -1,4 +1,4 @@
-# Triggers a GitLab pipeline via API to update the APT repository when a stable GitHub Release is published (drafts and prereleases are ignored).
+# Triggers a GitLab pipeline via API to update the APT repository when a  stable GitHub Release is published (drafts and prereleases are ignored).
 # Since GitLab can't parse native GitHub webhooks, this uses curl to pass the release tag.
 # It can be re-run manually via the Actions tab.
 #
