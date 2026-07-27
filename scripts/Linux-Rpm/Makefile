@@ -6,22 +6,13 @@ PACKAGE_VERSION=1
 .PHONY: all clean docker-build-image prepare-source prepare-man-pages prepare-bash-completion pack-source build
 
 all: clean docker-build-image docker-build
-all_x86: docker-build-image_amd64 docker-build_amd64
-all_arm64: docker-build-image_arm64 docker-build_arm64
 
 docker-build: docker-build-image
-	docker run --rm -v `pwd`/../../:/opt/kathara kathara/linux-build-rpm /bin/bash -c \
+	docker run --rm -v `pwd`/../../:/opt/kathara $(SET_ARCH) kathara/linux-build-rpm /bin/bash -c \
 		"make build && chown -R $(shell id -u):$(shell id -g) Output"
 
 docker-build-image:
-	cd Docker-Linux-Build && docker build -t kathara/linux-build-rpm .
-
-docker-build_%: docker-build-image_%
-	docker run --rm --platform linux/$* -v `pwd`/../../:/opt/kathara kathara/linux-build-rpm-$* /bin/bash -c \
-		"make build && chown -R $(shell id -u):$(shell id -g) Output"
-
-docker-build-image_%:
-	cd Docker-Linux-Build && docker build --platform linux/$* -t kathara/linux-build-rpm-$* .
+	cd Docker-Linux-Build && docker build $(SET_ARCH) -t kathara/linux-build-rpm .
 
 prepare-source:
 	cp rpm/kathara.spec ~/rpmbuild/SPECS
