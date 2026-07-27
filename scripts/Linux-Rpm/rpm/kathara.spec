@@ -22,10 +22,10 @@ python3.13 -m venv %{_builddir}/venv
 %{_builddir}/venv/bin/pip install --upgrade pip
 %{_builddir}/venv/bin/pip install -r src/requirements.txt
 %{_builddir}/venv/bin/pip install pyinstaller
-# %{_builddir}/venv/bin/pip install pytest
+%{_builddir}/venv/bin/pip install pytest
 
 %build
-# %{_builddir}/venv/bin/python -m pytest
+%{_builddir}/venv/bin/python -m pytest
 cd src && %{_builddir}/venv/bin/pyinstaller --distpath=./kathara.dist --workpath=./kathara.build kathara.spec
 
 %install
@@ -38,13 +38,13 @@ install -d -m 755 %{buildroot}%{_bindir}
 ln -sf %{_libdir}/kathara/kathara %{buildroot}%{_bindir}/kathara
 install -d -m 755 %{buildroot}%{_mandir}
 cp -r %{_builddir}/%{buildsubdir}/manpages/* %{buildroot}%{_mandir}/
-# install -d -m 755 %{buildroot}%{_sysconfdir}/bash_completion.d/
-# install -p -m 644 %{_builddir}/%{buildsubdir}/kathara.bash-completion %{buildroot}%{_sysconfdir}/bash_completion.d/
+install -d -m 755 %{buildroot}%{_sysconfdir}/bash_completion.d/
+install -p -m 644 %{_builddir}/%{buildsubdir}/kathara.bash-completion %{buildroot}%{_sysconfdir}/bash_completion.d/
 
 %files
 %{_libdir}/kathara/*
 %{_mandir}/*
-# %{_sysconfdir}/bash_completion.d/kathara.bash-completion
+%{_sysconfdir}/bash_completion.d/kathara.bash-completion
 %{_bindir}/kathara
 
 %post
