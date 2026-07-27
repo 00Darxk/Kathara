@@ -56,6 +56,3 @@ test = ["pytest"]
 [build-system]
 requires = ["setuptools<81.0.0", "wheel"]
 build-backend = "setuptools.build_meta"
-[tool.pytest.ini_options]
-addopts = "-p no:libtmux"
-testpaths = ["tests/placeholder_test.py"]
