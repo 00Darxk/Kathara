@@ -2,8 +2,8 @@
 
 VERSION=__KATHARA_VERSION__
 PACKAGE_VERSION=1
-AUR_NAME=user
-AUR_MAIL=contact@kathara.org
+AUR_NAME=__AUR_NAME__
+AUR_MAIL=__AUR_EMAIL__
 
 .PHONY: all allRemote clean docker-build-image docker-build-local docker-build-remote build-local build-remote
 

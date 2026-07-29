@@ -2,10 +2,10 @@
 # It can be re-run manually via the Actions tab.
 #
 # Required configuration (in Action Settings):
-#   Secret: AUR_NAME      (git username allowed on AUR repo)
-#           AUR_EMAIL     (git email allowed on AUR repo)
-#           PYPI_USERNAME (username of pypi account)
+#   Secret: PYPI_USERNAME (username of pypi account)
 #           PYPI_PASSWORD (password of pypi account)
+#   Var:    AUR_NAME      (git username allowed on AUR repo)
+#           AUR_EMAIL     (git email allowed on AUR repo)
 # The runner must have the ssh key associated with AUR_NAME and AUR_EMAIL
 # to be able to commit on the AUR repository
 
@@ -51,8 +51,9 @@ jobs:
         run: |
           cd scripts/Linux-Pkg
           sed -i -e "s|__KATHARA_VERSION__|${{ needs.version.outputs.version }}|g" Makefile
-          make build-remote AUR_NAME=${{ secrets.AUR_NAME }} AUR_EMAIL=${{ secrets.AUR_EMAIL }}
-        
+          sed -i -e "s|__AUR_NAME__|${{ secrets.AUR_NAME }}|g" Makefile
+          sed -i -e "s|__AUR_EMAIL__|${{ secrets.AUR_EMAIL }}|g" Makefile
+          make allRemote
 
   push-pypi:
     name: Publish on Pypi
@@ -60,6 +61,7 @@ jobs:
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10   # v6.0.3
 
+      - run: mkdir -p scripts/pip-package/dist
       - name: Download Pip Package
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c   # v8.0.1
         with:
