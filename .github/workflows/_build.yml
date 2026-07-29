@@ -46,10 +46,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { distro: jammy, arch: amd64, runs-on: ubuntu-24.04 }
-          - { distro: jammy, arch: arm64, runs-on: ubuntu-24.04-arm }
-          - { distro: noble, arch: amd64, runs-on: ubuntu-24.04 }
-          - { distro: noble, arch: arm64, runs-on: ubuntu-24.04-arm }
+          - { distro: jammy, arch: amd64, runs-on: ubuntu-24.04, set_arch: '--platform linux/amd64' }
+          - { distro: jammy, arch: arm64, runs-on: ubuntu-24.04-arm, set_arch: '--platform linux/arm64' }
+          - { distro: noble, arch: amd64, runs-on: ubuntu-24.04, set_arch: '--platform linux/amd64' }
+          - { distro: noble, arch: arm64, runs-on: ubuntu-24.04-arm, set_arch: '--platform linux/arm64' }
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10   # v6.0.3
       - name: Cache Deb Package
@@ -81,8 +81,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { arch: x86_64,  runs-on: ubuntu-24.04 }
-          - { arch: aarch64, runs-on: ubuntu-24.04-arm }
+          - { arch: x86_64,  runs-on: ubuntu-24.04, set_arch: '--platform linux/amd64' }
+          - { arch: aarch64, runs-on: ubuntu-24.04-arm, set_arch: '--platform linux/arm64' }
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10   # v6.0.3
       - name: Cache Rpm Package
@@ -216,21 +216,26 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10   # v6.0.3
-      - name: Cache Pip Package
-        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae   # v5.0.5
-        id: cache-pip
-        with:
-          path: scripts/pip-package/dist
-          key: pip-${{ inputs.version }}-${{ hashFiles('src/**', 'scripts/pip-package/**', '!scripts/pip-package/dist/**') }}
-      - uses: ./.github/actions/setup-python-build
-        with:
-          python-version: '3.13'
-      - name: Build Pip Package
+      
+      - name: Prepare module configs
         run: |
           sed -i -e "s|^version = \".*\"|version = \"${{ inputs.version }}\"|" pyproject.toml
           sed -i -e "s|^version = .*|version = ${{ inputs.version }}|" setup.cfg
           sed -i -e "s|version='[^']*'|version='${{ inputs.version }}'|" setup.py
           sed -i -e "s#refs/tags/[^']*\.tar\.gz#refs/tags/${{ inputs.version }}.tar.gz#" setup.py
+      
+      - name: Cache Pip Package
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae   # v5.0.5
+        id: cache-pip
+        with:
+          path: scripts/pip-package/dist
+          key: pip-${{ inputs.version }}-${{ hashFiles('pyproject.toml', 'setup.cfg', 'setup.py', 'src/**', 'scripts/pip-package/**', '!scripts/pip-package/dist/**') }}
+      - uses: ./.github/actions/setup-python-build
+        with:
+          python-version: '3.13'
+      - name: Build Pip Package
+        if: steps.cache-pip.outputs.cache-hit != 'true'
+        run: |
           cd scripts/pip-package
           make package
 
