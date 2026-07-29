@@ -1,7 +1,7 @@
 #!/usr/bin/make -s
 
 PRODUCT=Kathara
-VERSION=3.8.3
+VERSION=__KATHARA_VERSION__
 TARGET_DIRECTORY=Output
 APPLE_DEVELOPER_CERTIFICATE_ID=FakeID
 ROFF_DIR=../../docs/Roff
@@ -18,14 +18,14 @@ allSigned_arm64: cleanall deps binary_arm64 manpages createInstaller_arm64 signP
 default: all
 
 py_env:
-	python3.13 -m venv $(VENV_DIR)
+	python3 -m venv $(VENV_DIR)
 
 deps: py_env
 	$(VENV_DIR)/bin/pip install -U "setuptools<81"
 	$(VENV_DIR)/bin/pip install "pyinstaller==6.18.0"
 	$(VENV_DIR)/bin/pip install -r ../../src/requirements.txt
 	$(VENV_DIR)/bin/pip install pytest
-	$$(brew --prefix ruby)/bin/gem install ronn-ng --user-install
+	gem install ronn-ng
 
 manpages:
 	cd ../../docs && make roff-build;

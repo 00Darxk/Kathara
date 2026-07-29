@@ -1,0 +1,74 @@
+# Update AUR and Pypi repository
+# It can be re-run manually via the Actions tab.
+#
+# Required configuration (in Action Settings):
+#   Secret: AUR_NAME      (git username allowed on AUR repo)
+#           AUR_EMAIL     (git email allowed on AUR repo)
+#           PYPI_USERNAME (username of pypi account)
+#           PYPI_PASSWORD (password of pypi account)
+# The runner must have the ssh key associated with AUR_NAME and AUR_EMAIL
+# to be able to commit on the AUR repository
+
+name: publish-remote
+
+on:
+  release:
+    types: [published]
+  # Manual re-run: Actions -> publish-remote -> Run workflow
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Never let two publishes race on the GitLab side. 
+# A newer release supersedes an in-flight older one rather than deploying on top of it.
+concurrency:
+  group: publish-remote
+  cancel-in-progress: false
+
+jobs:
+
+  version:
+    name: Get version
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    outputs:
+      version: ${{ steps.get_version.outputs.version }}
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10   # v6.0.3
+
+      - id: get_version
+        uses: ./.github/actions/get-version
+
+  push-aur:
+    name: Publish on AUR
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10   # v6.0.3
+
+      - name: Push on AUR
+        run: |
+          cd scripts/Linux-Pkg
+          sed -i -e "s|__KATHARA_VERSION__|${{ needs.version.outputs.version }}|g" Makefile
+          make build-remote AUR_NAME=${{ secrets.AUR_NAME }} AUR_EMAIL=${{ secrets.AUR_EMAIL }}
+        
+
+  push-pypi:
+    name: Publish on Pypi
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10   # v6.0.3
+
+      - name: Download Pip Package
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c   # v8.0.1
+        with:
+          name: pypi
+          path: scripts/pip-package/dist
+
+      - name: Push to Pypi
+        run: |
+          cd scripts/pip-package
+          python3 -m pip install twine
+          twine upload -u ${{ secrets.PYPI_USERNAME }} -p ${{ secrets.PYPI_PASSWORD }} dist/*
+

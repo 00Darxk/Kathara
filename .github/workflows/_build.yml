@@ -1,0 +1,247 @@
+name: build-matrix
+
+# Reusable "build engine"
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        description: 'Kathará version'
+        required: true
+        type: string
+      retention-days:
+        description: 'Artifact retention in days'
+        required: false
+        type: number
+        default: 7
+
+permissions:
+  contents: read
+
+jobs:
+
+  test:
+    name: pytest (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, windows-2025, macos-26]
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10   # v6.0.3
+      - uses: ./.github/actions/setup-python-build
+        with:
+          python-version: '3.13'
+
+      - name: Run PyTest
+        shell: bash
+        run: python -m pytest
+
+#================================================================================================
+  deb:
+    name: deb-${{ matrix.distro }}-${{ matrix.arch }}
+    needs: [test]
+    runs-on: ${{ matrix.runs-on }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { distro: jammy, arch: amd64, runs-on: ubuntu-24.04, set_arch: '--platform linux/amd64' }
+          - { distro: jammy, arch: arm64, runs-on: ubuntu-24.04-arm, set_arch: '--platform linux/arm64' }
+          - { distro: noble, arch: amd64, runs-on: ubuntu-24.04, set_arch: '--platform linux/amd64' }
+          - { distro: noble, arch: arm64, runs-on: ubuntu-24.04-arm, set_arch: '--platform linux/arm64' }
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10   # v6.0.3
+      - name: Cache Deb Package
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae   # v5.0.5
+        id: cache-deb
+        with:
+          path: scripts/Linux-Deb/Output
+          key: deb-${{ matrix.distro }}-${{ matrix.arch }}-${{ inputs.version }}-${{ hashFiles('src/**', 'scripts/Linux-Deb/**', '!scripts/Linux-Deb/Output/**') }}
+      - name: Build Deb Package
+        if: steps.cache-deb.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          cd scripts/Linux-Deb
+          sed -i -e "s|__KATHARA_VERSION__|${{ inputs.version }}|g" Makefile
+          make docker-unsigned_${{ matrix.distro }}
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a   #v7.0.1
+        with:
+          name: deb-${{ matrix.distro }}-${{ matrix.arch }}
+          path: scripts/Linux-Deb/Output/*${{ matrix.arch }}.deb
+          if-no-files-found: warn
+          retention-days: ${{ inputs.retention-days }}
+
+#================================================================================================
+  rpm:
+    name: rpm-${{ matrix.arch }}
+    needs: [test]
+    runs-on: ${{ matrix.runs-on }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { arch: x86_64,  runs-on: ubuntu-24.04, set_arch: '--platform linux/amd64' }
+          - { arch: aarch64, runs-on: ubuntu-24.04-arm, set_arch: '--platform linux/arm64' }
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10   # v6.0.3
+      - name: Cache Rpm Package
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae   # v5.0.5
+        id: cache-rpm
+        with:
+          path: scripts/Linux-Rpm/Output
+          key: rpm-${{ matrix.arch }}-${{ inputs.version }}-${{ hashFiles('src/**', 'scripts/Linux-Rpm/**', '!scripts/Linux-Rpm/Output/**') }}
+      - name: Build Rpm Package
+        if: steps.cache-rpm.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          cd scripts/Linux-Rpm
+          sed -i -e "s|__KATHARA_VERSION__|${{ inputs.version }}|g" Makefile
+          make all
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a   #v7.0.1
+        with:
+          name: rpm-${{ matrix.arch }}
+          path: scripts/Linux-Rpm/Output/${{ matrix.arch }}/*.rpm
+          if-no-files-found: warn
+          retention-days: ${{ inputs.retention-days }}
+
+#================================================================================================
+  pkg:
+    name: pkg-any
+    needs: [test]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10   # v6.0.3
+      - name: Cache Pkg Package
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae   # v5.0.5
+        id: cache-pkg
+        with:
+          path: scripts/Linux-Pkg/Output
+          key: pkg-${{ inputs.version }}-${{ hashFiles('src/**', 'scripts/Linux-Pkg/**', '!scripts/Linux-Pkg/Output/**') }}
+      - name: Build Pkg Package
+        if: steps.cache-pkg.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          cd scripts/Linux-Pkg
+          sed -i -e "s|__KATHARA_VERSION__|${{ inputs.version }}|g" Makefile
+          make all
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a   #v7.0.1
+        with:
+          name: pkg-any
+          path: scripts/Linux-Pkg/Output/*.pkg.tar.zst
+          if-no-files-found: warn
+          retention-days: ${{ inputs.retention-days }}
+
+#================================================================================================
+  windows:
+    name: windows-${{ matrix.arch }}
+    needs: [test]
+    runs-on: ${{ matrix.runs-on }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { arch: x64,   runs-on: ubuntu-24.04 }
+          # - { arch: arm64, runs-on: ubuntu-24.04-arm }
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10   # v6.0.3
+      - uses: ./.github/actions/setup-python-build
+        with:
+          python-version: '3.13'
+      - name: Cache Windows Installer
+        id: cache-win
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae    #v5.0.5
+        with:
+          path: ./scripts/Windows/Output
+          key: win-${{ inputs.version }}-${{ hashFiles('src/**', 'scripts/Windows/**', '!scripts/Windows/Output/**') }}
+      - name: Build Windows Installer
+        if: steps.cache-win.outputs.cache-hit != 'true'
+        run: |
+          cd ./scripts/Windows/
+          sed -i -e "s|__KATHARA_VERSION__|${{ inputs.version }}|g" Makefile
+          make all
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a   #v7.0.1
+        with:
+          name: windows-${{ matrix.arch }}
+          path: scripts/Windows/Output/*.exe
+          if-no-files-found: warn
+          retention-days: ${{ inputs.retention-days }}
+
+# #================================================================================================
+  macos:
+    name: macos-${{ matrix.arch }}
+    needs: [test]
+    runs-on: ${{ matrix.runs-on }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { arch: arm64,  make: all_arm64, runs-on: macos-26 }
+          - { arch: x86_64, make: all_x86,   runs-on: macos-26-intel }
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10   # v6.0.3
+      - name: Cache OSX Package
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae   # v5.0.5
+        id: cache-osx
+        with:
+          path: scripts/OSX/Output
+          key: pkg-${{ inputs.version }}-${{ hashFiles('src/**', 'scripts/OSX/**', '!scripts/OSX/Output/**') }}
+      - uses: ./.github/actions/setup-python-build
+        with:
+          python-version: '3.13'
+      - name: Install Ruby
+        uses: ruby/setup-ruby@89f90524b88a01fe6e0b732220432cc6142926af    #v1.313.0
+        with:
+          ruby-version: '4.0'
+          bundler-cache: true
+      - name: Build macOS installer
+        if: steps.cache-osx.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          cd scripts/OSX
+          sed -i '' -e "s|__KATHARA_VERSION__|${{ inputs.version }}|g" Makefile
+          make ${{ matrix.make }}
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a   #v7.0.1
+        with:
+          name: macos-${{ matrix.arch }}
+          path: scripts/OSX/Output
+          if-no-files-found: warn
+          retention-days: ${{ inputs.retention-days }}
+
+#================================================================================================
+
+  pypi:
+    name: pypi
+    needs: [test]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10   # v6.0.3
+      
+      - name: Prepare module configs
+        run: |
+          sed -i -e "s|^version = \".*\"|version = \"${{ inputs.version }}\"|" pyproject.toml
+          sed -i -e "s|^version = .*|version = ${{ inputs.version }}|" setup.cfg
+          sed -i -e "s|version='[^']*'|version='${{ inputs.version }}'|" setup.py
+          sed -i -e "s#refs/tags/[^']*\.tar\.gz#refs/tags/${{ inputs.version }}.tar.gz#" setup.py
+      
+      - name: Cache Pip Package
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae   # v5.0.5
+        id: cache-pip
+        with:
+          path: scripts/pip-package/dist
+          key: pip-${{ inputs.version }}-${{ hashFiles('pyproject.toml', 'setup.cfg', 'setup.py', 'src/**', 'scripts/pip-package/**', '!scripts/pip-package/dist/**') }}
+      - uses: ./.github/actions/setup-python-build
+        with:
+          python-version: '3.13'
+      - name: Build Pip Package
+        if: steps.cache-pip.outputs.cache-hit != 'true'
+        run: |
+          cd scripts/pip-package
+          make package
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a   #v7.0.1
+        with:
+          name: pypi
+          path: scripts/pip-package/dist
+          if-no-files-found: warn
+          retention-days: ${{ inputs.retention-days }}
