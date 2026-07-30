@@ -209,39 +209,3 @@ jobs:
           retention-days: ${{ inputs.retention-days }}
 
 #================================================================================================
-
-  pypi:
-    name: pypi
-    needs: [test]
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10   # v6.0.3
-      
-      - name: Prepare module configs
-        run: |
-          sed -i -e "s|^version = \".*\"|version = \"${{ inputs.version }}\"|" pyproject.toml
-          sed -i -e "s|^version = .*|version = ${{ inputs.version }}|" setup.cfg
-          sed -i -e "s|version='[^']*'|version='${{ inputs.version }}'|" setup.py
-          sed -i -e "s#refs/tags/[^']*\.tar\.gz#refs/tags/${{ inputs.version }}.tar.gz#" setup.py
-      
-      - name: Cache Pip Package
-        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae   # v5.0.5
-        id: cache-pip
-        with:
-          path: scripts/pip-package/dist
-          key: pip-${{ inputs.version }}-${{ hashFiles('pyproject.toml', 'setup.cfg', 'setup.py', 'src/**', 'scripts/pip-package/**', '!scripts/pip-package/dist/**') }}
-      - uses: ./.github/actions/setup-python-build
-        with:
-          python-version: '3.13'
-      - name: Build Pip Package
-        if: steps.cache-pip.outputs.cache-hit != 'true'
-        run: |
-          cd scripts/pip-package
-          make package
-
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a   #v7.0.1
-        with:
-          name: pypi
-          path: scripts/pip-package/dist
-          if-no-files-found: warn
-          retention-days: ${{ inputs.retention-days }}
