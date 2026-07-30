@@ -3,6 +3,7 @@
 VERSION=__KATHARA_VERSION__
 DEBIAN_PACKAGE_VERSION=1
 NO_BINARY_PACKAGES=pyroute2
+OS=ubuntu
 
 .PHONY: allSigned docker-build-image prepare-deb-source unpack-deb-source clean-output-folder copy-debian-folder download-pip build-man build-deb-unsigned build-deb-signed ppa clean venv autocompletion
 
@@ -12,13 +13,10 @@ docker-unsigned_%: clean prepare-deb-source docker-build-image_%
 	docker run --rm -v `pwd`/../../:/opt/kathara $(SET_ARCH) kathara/linux-build-deb:$* /bin/bash -c \
 	 	"make build-deb-unsigned distro=$* && chown -R $(shell id -u):$(shell id -g) Output"
 
-docker-signed_%: docker-build-image_%
-	docker run --rm -v $(HOME)/.gnupg:/root/gnupg-host -v `pwd`/../../:/opt/kathara $(SET_ARCH) kathara/linux-build-deb:$* /bin/bash -c \
-	 	"make unpack-deb-source && make build-deb-signed distro=$* && make ppa && make clean-output-folder distro=$*"
-
 docker-build-image_%:
 	cd Docker-Linux-Build && cp Dockerfile_template Dockerfile
 	cd Docker-Linux-Build && sed -i -e "s|__DISTRO__|$*|g" Dockerfile
+	cd Docker-Linux-Build && sed -i -e "s|__OS__|$(OS)|g" Dockerfile
 	cd Docker-Linux-Build && docker build $(SET_ARCH) -t kathara/linux-build-deb:$* .
 	cd Docker-Linux-Build && rm Dockerfile
 

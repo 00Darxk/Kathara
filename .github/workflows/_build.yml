@@ -46,10 +46,14 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { distro: jammy, arch: amd64, runs-on: ubuntu-24.04, set_arch: '--platform linux/amd64' }
-          - { distro: jammy, arch: arm64, runs-on: ubuntu-24.04-arm, set_arch: '--platform linux/arm64' }
-          - { distro: noble, arch: amd64, runs-on: ubuntu-24.04, set_arch: '--platform linux/amd64' }
-          - { distro: noble, arch: arm64, runs-on: ubuntu-24.04-arm, set_arch: '--platform linux/arm64' }
+          - { os: ubuntu, distro: jammy,    arch: amd64, runs-on: ubuntu-24.04     }
+          - { os: ubuntu, distro: jammy,    arch: arm64, runs-on: ubuntu-24.04-arm }
+          - { os: ubuntu, distro: noble,    arch: amd64, runs-on: ubuntu-24.04     }
+          - { os: ubuntu, distro: noble,    arch: arm64, runs-on: ubuntu-24.04-arm }
+          - { os: ubuntu, distro: resolute, arch: amd64, runs-on: ubuntu-24.04     }
+          - { os: ubuntu, distro: resolute, arch: arm64, runs-on: ubuntu-24.04-arm }
+          - { os: debian, distro: trixie,   arch: amd64, runs-on: ubuntu-24.04     }
+          - { os: debian, distro: trixie,   arch: arm64, runs-on: ubuntu-24.04-arm }
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10   # v6.0.3
       - name: Cache Deb Package
@@ -64,7 +68,7 @@ jobs:
         run: |
           cd scripts/Linux-Deb
           sed -i -e "s|__KATHARA_VERSION__|${{ inputs.version }}|g" Makefile
-          make docker-unsigned_${{ matrix.distro }}
+          make docker-unsigned_${{ matrix.distro }} OS=${{ matrix.os }} SET_ARCH='--platform linux/${{ matrix.arch }}'
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a   #v7.0.1
         with:
           name: deb-${{ matrix.distro }}-${{ matrix.arch }}
@@ -81,7 +85,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { arch: x86_64,  runs-on: ubuntu-24.04, set_arch: '--platform linux/amd64' }
+          - { arch: x86_64,  runs-on: ubuntu-24.04,     set_arch: '--platform linux/amd64' }
           - { arch: aarch64, runs-on: ubuntu-24.04-arm, set_arch: '--platform linux/arm64' }
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10   # v6.0.3
@@ -97,7 +101,7 @@ jobs:
         run: |
           cd scripts/Linux-Rpm
           sed -i -e "s|__KATHARA_VERSION__|${{ inputs.version }}|g" Makefile
-          make all
+          make all SET_ARCH=${{ matrix.set_arch }}
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a   #v7.0.1
         with:
           name: rpm-${{ matrix.arch }}
@@ -142,7 +146,6 @@ jobs:
       matrix:
         include:
           - { arch: x64,   runs-on: ubuntu-24.04 }
-          # - { arch: arm64, runs-on: ubuntu-24.04-arm }
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10   # v6.0.3
       - uses: ./.github/actions/setup-python-build
