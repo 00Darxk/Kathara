@@ -189,10 +189,17 @@ jobs:
           sed -i -e "s|__AUR_EMAIL__|$AUR_EMAIL|g" Makefile
           make allRemote
 
+          {
+            echo "### AUR publish triggered"
+            echo ""
+            echo "- Release: \`$VERSION\`"
+            echo "- Package: [Kathara AUR](https://aur.archlinux.org/packages/kathara)"
+          } >> "$GITHUB_STEP_SUMMARY"
+
   publish-pypi:
     name: Publish Package to Pypi
     runs-on: ubuntu-24.04
-    needs: [gate]
+    needs: [gate, version]
     if: needs.gate.outputs.proceed == 'true'
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10   # v6.0.3
@@ -206,6 +213,14 @@ jobs:
         env:
           TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
           TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
+          VERSION:   ${{ needs.version.outputs.version }}
         run: |
           cd scripts/pip-package
           make upload
+
+          {
+            echo "### PyPI publish triggered"
+            echo ""
+            echo "- Release: \`$VERSION\`"
+            echo "- Package: [Kathara PyPI](https://pypi.org/project/kathara/$VERSION/)"
+          } >> "$GITHUB_STEP_SUMMARY"
