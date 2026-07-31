@@ -37,7 +37,7 @@ clean-output-folder:
 
 copy-debian-folder:
 	cp -r debian Output/kathara-$(VERSION)/
-	if [ -z "$$(apt-cache search python3.13)" ] ; then sed -i -z -e 's/[ \t]*python3[^,]*,\n//g'  Output/kathara-$(VERSION)/debian/control ; fi
+	if [ -z "$$(apt-cache search python3.13 | grep 'python3\.13')" ] ; then sed -i -z -e 's/[ \t]*python3[^,]*,\n//g'  Output/kathara-$(VERSION)/debian/control ; fi
 	sed -i -e "s|__DATE__|$$(date -R)|g" Output/kathara-$(VERSION)/debian/changelog
 	sed -i -e 's/__DEBIAN_PACKAGE_VERSION__/$(DEBIAN_PACKAGE_VERSION)/g' Output/kathara-$(VERSION)/debian/changelog
 	sed -i -e 's/__VERSION__/$(VERSION)/g' Output/kathara-$(VERSION)/debian/changelog
