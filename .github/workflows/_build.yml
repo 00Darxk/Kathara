@@ -46,12 +46,20 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          - { os: ubuntu, distro: focal,    arch: amd64, runs-on: ubuntu-24.04     }
+          - { os: ubuntu, distro: focal,    arch: arm64, runs-on: ubuntu-24.04-arm }
           - { os: ubuntu, distro: jammy,    arch: amd64, runs-on: ubuntu-24.04     }
           - { os: ubuntu, distro: jammy,    arch: arm64, runs-on: ubuntu-24.04-arm }
           - { os: ubuntu, distro: noble,    arch: amd64, runs-on: ubuntu-24.04     }
           - { os: ubuntu, distro: noble,    arch: arm64, runs-on: ubuntu-24.04-arm }
+          - { os: ubuntu, distro: questing, arch: amd64, runs-on: ubuntu-24.04     }
+          - { os: ubuntu, distro: questing, arch: arm64, runs-on: ubuntu-24.04-arm }
           - { os: ubuntu, distro: resolute, arch: amd64, runs-on: ubuntu-24.04     }
           - { os: ubuntu, distro: resolute, arch: arm64, runs-on: ubuntu-24.04-arm }
+          - { os: debian, distro: bullseye, arch: amd64, runs-on: ubuntu-24.04     }
+          - { os: debian, distro: bullseye, arch: arm64, runs-on: ubuntu-24.04-arm }
+          - { os: debian, distro: bookworm, arch: amd64, runs-on: ubuntu-24.04     }
+          - { os: debian, distro: bookworm, arch: arm64, runs-on: ubuntu-24.04-arm }
           - { os: debian, distro: trixie,   arch: amd64, runs-on: ubuntu-24.04     }
           - { os: debian, distro: trixie,   arch: arm64, runs-on: ubuntu-24.04-arm }
     steps:

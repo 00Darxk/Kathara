@@ -44,11 +44,36 @@ RUN apt install -y gpg curl && \
 	curl -fsSl "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0xf23c5a6cf475977595c89f51ba6932366a755776" | gpg --dearmor -o /etc/apt/trusted.gpg.d/deadsnakes.gpg && \
 	echo 'deb https://ppa.launchpadcontent.net/deadsnakes/ppa/ubuntu __DISTRO__ main' > /etc/apt/sources.list.d/deadsnakes.list
 
-RUN (apt update || echo) && DEBIAN_FRONTEND=noninteractive apt install -y \
+ENV PATH="/opt/python/bin:$PATH"
+ENV LD_LIBRARY_PATH="/opt/python/lib"
+
+RUN (apt update || echo) && (DEBIAN_FRONTEND=noninteractive apt install -y \
 	python3.13 \
 	python3.13-dev \
 	python3.13-venv \
-	python3-pip
+	python3-pip) || \
+	(DEBIAN_FRONTEND=noninteractive apt install -y \
+	wget \
+	build-essential \
+	libreadline-dev \
+	libncursesw5-dev \
+	libssl-dev \
+	libsqlite3-dev \
+	tk-dev \
+	libgdbm-dev \
+	libc6-dev \
+	libbz2-dev \
+	libffi-dev \
+	zlib1g-dev && \
+	wget -c "https://www.python.org/ftp/python/3.13.13/Python-3.13.13.tar.xz" && \
+	tar -Jxvf Python-3.13.13.tar.xz && \
+	cd Python-3.13.13 && ./configure --enable-optimizations --enable-shared --prefix=/opt/python LDFLAGS=-Wl,-rpath=/opt/python/lib && \
+	make -j $(nproc) && make install && \
+	python3.13 -m pip install virtualenv lxml && \
+	ln -s /opt/python/bin/python3.13 /usr/bin/python3.13 && \
+    ln -s /opt/python/bin/pip3.13 /usr/bin/pip3.13 && \
+    echo /opt/python/lib > /etc/ld.so.conf.d/python3.13.conf && \
+    ldconfig)
 
 RUN gem install ronn-ng
 

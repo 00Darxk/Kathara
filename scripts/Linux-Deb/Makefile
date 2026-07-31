@@ -5,9 +5,7 @@ DEBIAN_PACKAGE_VERSION=1
 NO_BINARY_PACKAGES=pyroute2
 OS=ubuntu
 
-.PHONY: allSigned docker-build-image prepare-deb-source unpack-deb-source clean-output-folder copy-debian-folder download-pip build-man build-deb-unsigned build-deb-signed ppa clean venv autocompletion
-
-allSigned: clean prepare-deb-source docker-signed_jammy docker-signed_noble
+.PHONY: docker-build-image prepare-deb-source unpack-deb-source clean-output-folder copy-debian-folder download-pip build-man build-deb-unsigned clean venv autocompletion
 
 docker-unsigned_%: clean prepare-deb-source docker-build-image_%
 	docker run --rm -v `pwd`/../../:/opt/kathara $(SET_ARCH) kathara/linux-build-deb:$* /bin/bash -c \
@@ -39,6 +37,7 @@ clean-output-folder:
 
 copy-debian-folder:
 	cp -r debian Output/kathara-$(VERSION)/
+	if [ -z "$$(apt-cache search python3.13)" ] ; then sed -i -z -e 's/[ \t]*python3[^,]*,\n//g'  Output/kathara-$(VERSION)/debian/control ; fi
 	sed -i -e "s|__DATE__|$$(date -R)|g" Output/kathara-$(VERSION)/debian/changelog
 	sed -i -e 's/__DEBIAN_PACKAGE_VERSION__/$(DEBIAN_PACKAGE_VERSION)/g' Output/kathara-$(VERSION)/debian/changelog
 	sed -i -e 's/__VERSION__/$(VERSION)/g' Output/kathara-$(VERSION)/debian/changelog
