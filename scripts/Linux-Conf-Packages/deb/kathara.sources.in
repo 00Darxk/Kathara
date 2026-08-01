@@ -1,0 +1,5 @@
+Types: deb
+URIs: __REPO_URL__/__DEB_SUBDIR__
+Suites: __SUITE__
+Components: __COMPONENT__
+Signed-By: /usr/share/keyrings/__KEYRING_NAME__.gpg

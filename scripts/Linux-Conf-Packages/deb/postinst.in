@@ -1,0 +1,12 @@
+#!/bin/sh
+set -e
+
+# Bootstrap cleanup. The published install instructions create /etc/apt/sources.list.d/kathara.list by hand before this package can be installed.
+# From now on the repository is defined by this package's kathara.sources: remove the manual leftover, or apt would see the same repository defined twice and warn on every update.
+#
+# Only the exact bootstrap file is touched; anything else the administrator created is left alone.
+if [ "$1" = "configure" ]; then
+    rm -f /etc/apt/sources.list.d/kathara.list
+fi
+
+exit 0

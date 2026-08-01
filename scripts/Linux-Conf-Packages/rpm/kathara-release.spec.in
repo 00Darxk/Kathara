@@ -1,0 +1,27 @@
+Name:           kathara-release
+Version:        __VERSION__
+Release:        __PACKAGE_VERSION__%{?dist}
+Summary:        Kathara repository configuration and signing keys
+License:        GPLv3
+URL:            https://www.kathara.org/
+BuildArch:      noarch
+Source0:        __REPO_ID__.repo
+Source1:        __KEY_FILE_NAME__
+
+%description
+Installs the public keys used to verify the Kathara RPM repository and the
+repository definition itself, so that future key rotations and repository
+changes arrive through regular package upgrades.
+
+%install
+rm -rf %{buildroot}
+install -D -p -m 644 %{SOURCE0} %{buildroot}%{_sysconfdir}/yum.repos.d/__REPO_ID__.repo
+install -D -p -m 644 %{SOURCE1} %{buildroot}%{_sysconfdir}/pki/rpm-gpg/__KEY_FILE_NAME__
+
+%files
+%config(noreplace) %{_sysconfdir}/yum.repos.d/__REPO_ID__.repo
+%{_sysconfdir}/pki/rpm-gpg/__KEY_FILE_NAME__
+
+%changelog
+* __DATE__ Kathara Team <contact@kathara.org> - __VERSION__-__PACKAGE_VERSION__
+- Repository configuration package
