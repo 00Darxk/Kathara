@@ -128,6 +128,7 @@ jobs:
         run: |
           cd scripts/Linux-Rpm
           sed -i -e "s|__KATHARA_VERSION__|${{ inputs.version }}|g" Makefile
+          # Quote SET_ARCH: it contains a space, and without quotes make parses 'linux/amd64' as a separate goal instead of part of the value.
           make docker-build_${{ matrix.release }} SET_ARCH='${{ matrix.set_arch }}'
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a   #v7.0.1
         with:
@@ -252,8 +253,27 @@ jobs:
           fi
           printf '%s' "$RPM_GPG_PRIVATE_KEY" | base64 -d | gpg --batch --quiet --import
 
-          KEYID="$(gpg --batch --list-secret-keys --with-colons | awk -F: '$1=="sec"{print $5; exit}')"
-          [ -n "$KEYID" ] || { echo "::error::no secret key was imported"; exit 1; }
+          # Pick the key that can actually SIGN.
+          # With the layout (certify-only primary + signing subkey) the 'sec' line is the primary,
+          # whose secret half is a stub and which carries no signing capability:
+          # passing it to gpg -u fails with "Unusable secret key".
+          # Field 12 holds the capabilities; 's' means signing.
+          KEYID="$(gpg --batch --list-secret-keys --with-colons \
+                   | awk -F: '$1=="ssb" && $12 ~ /s/ {print $5; exit}')"
+          if [ -z "$KEYID" ]; then
+            # Single-key layouts: the primary itself signs.
+            KEYID="$(gpg --batch --list-secret-keys --with-colons \
+                     | awk -F: '$1=="sec" && $12 ~ /s/ {print $5; exit}')"
+          fi
+          if [ -z "$KEYID" ]; then
+            echo "::error::the imported key has no usable signing key."
+            echo "The secret exported into RPM_GPG_PRIVATE_KEY must contain a signing"
+            echo "subkey (or a primary that can sign). Keys currently imported:"
+            gpg --batch --list-secret-keys --keyid-format long || true
+            echo "Regenerate the export with:"
+            echo "  gpg --export-secret-subkeys --armor \"<SIGNING_SUBKEY_FPR>!\" | base64 -w0"
+            exit 1
+          fi
           echo "Signing with key $KEYID"
 
           umask 077
@@ -263,7 +283,8 @@ jobs:
           # SHA-256 is mandatory: SHA-1 signatures are rejected outright by the crypto policy of current Fedora and RHEL.
           {
             echo '%_signature gpg'
-            echo "%_gpg_name $KEYID"
+            # The trailing '!' pins this exact key: without it gpg may resolve the id to another key of the same primary.
+            echo "%_gpg_name $KEYID!"
             echo '%_gpg_digest_algo sha256'
             echo "%_gpg_passphrase_file $PASSFILE"
             echo '%__gpg_sign_cmd %{__gpg} gpg --no-verbose --no-armor --no-secmem-warning --batch --pinentry-mode loopback --passphrase-file %{_gpg_passphrase_file} --digest-algo sha256 -u "%{_gpg_name}" -sbo %{__signature_filename} %{__plaintext_filename}'
