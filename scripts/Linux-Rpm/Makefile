@@ -2,17 +2,25 @@
 
 VERSION=__KATHARA_VERSION__
 PACKAGE_VERSION=1
+# Fedora release used by a plain `make all`.
+# CI overrides it per matrix entry by calling `make docker-build_<release>` directly.
+DEFAULT_RELEASE=43
 
-.PHONY: all clean docker-build-image prepare-source prepare-man-pages prepare-bash-completion pack-source build
+.PHONY: all clean prepare-source prepare-man-pages prepare-bash-completion pack-source build
 
-all: clean docker-build-image docker-build
+all: docker-build_$(DEFAULT_RELEASE)
 
-docker-build: docker-build-image
-	docker run --rm -v `pwd`/../../:/opt/kathara $(SET_ARCH) kathara/linux-build-rpm /bin/bash -c \
+# Pattern target: `make docker-build_43`, `make docker-build_44`, ...
+# The Fedora release becomes the %{?dist} tag of the resulting package (1.fc43, 1.fc44), which is what the YUM repository uses to file the package under fedora/<releasever>/<basearch>/.
+docker-build_%: clean docker-build-image_%
+	docker run --rm -v `pwd`/../../:/opt/kathara $(SET_ARCH) kathara/linux-build-rpm:$* /bin/bash -c \
 		"make build && chown -R $(shell id -u):$(shell id -g) Output"
 
-docker-build-image:
-	cd Docker-Linux-Build && docker build $(SET_ARCH) -t kathara/linux-build-rpm .
+docker-build-image_%:
+	cd Docker-Linux-Build && cp Dockerfile_template Dockerfile
+	cd Docker-Linux-Build && sed -i -e "s|__RELEASE__|$*|g" Dockerfile
+	cd Docker-Linux-Build && docker build $(SET_ARCH) -t kathara/linux-build-rpm:$* .
+	cd Docker-Linux-Build && rm Dockerfile
 
 prepare-source:
 	cp rpm/kathara.spec ~/rpmbuild/SPECS
