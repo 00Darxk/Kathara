@@ -14,6 +14,23 @@ on:
         required: false
         type: number
         default: 7
+      sign-rpm:
+        description: 'GPG-sign the RPM packages (only true on the release path)'
+        required: false
+        type: boolean
+        default: false
+      rpm-signer-runs-on:
+        description: 'Runner that holds the RPM signing key'
+        required: false
+        type: string
+        default: 'ubuntu-24.04'
+    secrets:
+      RPM_GPG_PRIVATE_KEY:
+        description: 'base64 of the armored RPM package signing key'
+        required: false
+      RPM_GPG_PASSPHRASE:
+        description: 'passphrase of the RPM package signing key'
+        required: false
 
 permissions:
   contents: read
@@ -86,15 +103,17 @@ jobs:
 
 #================================================================================================
   rpm:
-    name: rpm-${{ matrix.arch }}
+    name: rpm-fc${{ matrix.release }}-${{ matrix.arch }}
     needs: [test]
     runs-on: ${{ matrix.runs-on }}
     strategy:
       fail-fast: false
       matrix:
         include:
-          - { arch: x86_64,  runs-on: ubuntu-24.04,     set_arch: '--platform linux/amd64' }
-          - { arch: aarch64, runs-on: ubuntu-24.04-arm, set_arch: '--platform linux/arm64' }
+          - { release: 43, arch: x86_64,  runs-on: ubuntu-24.04,     set_arch: '--platform linux/amd64' }
+          - { release: 43, arch: aarch64, runs-on: ubuntu-24.04-arm, set_arch: '--platform linux/arm64' }
+          - { release: 44, arch: x86_64,  runs-on: ubuntu-24.04,     set_arch: '--platform linux/amd64' }
+          - { release: 44, arch: aarch64, runs-on: ubuntu-24.04-arm, set_arch: '--platform linux/arm64' }
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10   # v6.0.3
       - name: Cache Rpm Package
@@ -102,19 +121,182 @@ jobs:
         id: cache-rpm
         with:
           path: scripts/Linux-Rpm/Output
-          key: rpm-${{ matrix.arch }}-${{ inputs.version }}-${{ hashFiles('src/**', 'scripts/Linux-Rpm/**', '!scripts/Linux-Rpm/Output/**') }}
+          key: rpm-fc${{ matrix.release }}-${{ matrix.arch }}-${{ inputs.version }}-${{ hashFiles('src/**', 'scripts/Linux-Rpm/**', '!scripts/Linux-Rpm/Output/**') }}
       - name: Build Rpm Package
         if: steps.cache-rpm.outputs.cache-hit != 'true'
         shell: bash
         run: |
           cd scripts/Linux-Rpm
           sed -i -e "s|__KATHARA_VERSION__|${{ inputs.version }}|g" Makefile
-          make all SET_ARCH=${{ matrix.set_arch }}
+          make docker-build_${{ matrix.release }} SET_ARCH=${{ matrix.set_arch }}
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a   #v7.0.1
         with:
-          name: rpm-${{ matrix.arch }}
+          name: rpm-fc${{ matrix.release }}-${{ matrix.arch }}
           path: scripts/Linux-Rpm/Output/${{ matrix.arch }}/*.rpm
-          if-no-files-found: warn
+          # A silently empty build would publish a yum repository with a missing releasever: on this path emptiness is an error.
+          if-no-files-found: error
+          retention-days: ${{ inputs.retention-days }}
+
+#================================================================================================
+# conf-deb / conf-rpm — the two repository configuration packages.
+#
+# - kathara-archive-keyring (.deb, Architecture: all, one per suite)
+# - kathara-release (.rpm, noarch, one per Fedora release)
+# Carry the signing keys and the repository definition to users, so key rotations and repository changes ship as regular upgrades.
+# Their version is independent of the Kathara version (see scripts/Linux-Conf-Packages/Makefile).
+#
+# LINUX_REPO_URL (Actions variable) overrides the production URL for test instances of the repository site.
+#================================================================================
+  conf-deb:
+    name: conf-deb-${{ matrix.distro }}
+    needs: [test]
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        distro: [jammy, noble, resolute, trixie, focal, bookworm, bullseye, questing]
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10   # v6.0.3
+      - name: Build keyring package
+        shell: bash
+        env:
+          REPO_URL: ${{ vars.LINUX_REPO_URL || 'https://repo.kathara.org' }}
+        run: |
+          cd scripts/Linux-Conf-Packages
+          make deb_${{ matrix.distro }}
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a   #v7.0.1
+        with:
+          name: conf-deb-${{ matrix.distro }}
+          path: scripts/Linux-Conf-Packages/Output/*.deb
+          if-no-files-found: error
+          retention-days: ${{ inputs.retention-days }}
+
+  conf-rpm:
+    name: conf-rpm-fc${{ matrix.release }}
+    needs: [test]
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        release: [43, 44]
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10   # v6.0.3
+      - name: Build release package
+        shell: bash
+        env:
+          REPO_URL: ${{ vars.LINUX_REPO_URL || 'https://repo.kathara.org' }}
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq rpm
+          cd scripts/Linux-Conf-Packages
+          make rpm_${{ matrix.release }}
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a   #v7.0.1
+        with:
+          name: conf-rpm-fc${{ matrix.release }}
+          path: scripts/Linux-Conf-Packages/Output/*.rpm
+          if-no-files-found: error
+          retention-days: ${{ inputs.retention-days }}
+
+#================================================================================================
+# rpm-sign — the packages are signed HERE, on GitHub, before release.yml computes SHA256SUMS.
+# The GitHub release is therefore the single source of truth:
+# the GitLab pipeline only verifies, lays out and indexes what it downloads, and never has to modify a package (which would change its checksum).
+#
+# Runs only on the release path (sign-rpm: true), so pull request builds never touch the key.
+# Re-uploads each artifact under the same name with overwrite, so no unsigned copy survives to reach the release.
+# The kathara-release configuration package goes through here like every other .rpm: dnf with gpgcheck=1 would refuse it unsigned.
+#================================================================================
+  rpm-sign:
+    name: sign-${{ matrix.artifact }}
+    needs: [rpm, conf-rpm]
+    if: ${{ inputs.sign-rpm }}
+    runs-on: ${{ inputs.rpm-signer-runs-on }}
+    strategy:
+      fail-fast: false
+      max-parallel: 1          # one signing key, one runner
+      matrix:
+        artifact:
+          - rpm-fc43-x86_64
+          - rpm-fc43-aarch64
+          - rpm-fc44-x86_64
+          - rpm-fc44-aarch64
+          - conf-rpm-fc43
+          - conf-rpm-fc44
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c   # v8.0.1
+        with:
+          name: ${{ matrix.artifact }}
+          path: rpms
+
+      - name: Sign and verify
+        shell: bash
+        env:
+          RPM_GPG_PRIVATE_KEY: ${{ secrets.RPM_GPG_PRIVATE_KEY }}
+          RPM_GPG_PASSPHRASE: ${{ secrets.RPM_GPG_PASSPHRASE }}
+        run: |
+          set -euo pipefail
+
+          command -v rpmsign >/dev/null 2>&1 || {
+            sudo apt-get update -qq && sudo apt-get install -y -qq rpm
+          }
+
+          # Everything the signing needs lives under a throwaway HOME, so neither ~/.rpmmacros nor the keyring of a persistent self-hosted runner is touched.
+          export HOME="$RUNNER_TEMP/rpm-signing"
+          rm -rf "$HOME"; mkdir -p "$HOME"; chmod 700 "$HOME"
+          export GNUPGHOME="$HOME/gnupg"; mkdir -p "$GNUPGHOME"; chmod 700 "$GNUPGHOME"
+          cleanup() { gpgconf --kill all >/dev/null 2>&1 || true; rm -rf "$HOME"; }
+          trap cleanup EXIT
+
+          if [ -z "${RPM_GPG_PRIVATE_KEY:-}" ]; then
+            echo "::error::secret RPM_GPG_PRIVATE_KEY is not set"
+            exit 1
+          fi
+          printf '%s' "$RPM_GPG_PRIVATE_KEY" | base64 -d | gpg --batch --quiet --import
+
+          KEYID="$(gpg --batch --list-secret-keys --with-colons | awk -F: '$1=="sec"{print $5; exit}')"
+          [ -n "$KEYID" ] || { echo "::error::no secret key was imported"; exit 1; }
+          echo "Signing with key $KEYID"
+
+          umask 077
+          PASSFILE="$HOME/passphrase"
+          printf '%s' "${RPM_GPG_PASSPHRASE:-}" > "$PASSFILE"
+
+          # SHA-256 is mandatory: SHA-1 signatures are rejected outright by the crypto policy of current Fedora and RHEL.
+          {
+            echo '%_signature gpg'
+            echo "%_gpg_name $KEYID"
+            echo '%_gpg_digest_algo sha256'
+            echo "%_gpg_passphrase_file $PASSFILE"
+            echo '%__gpg_sign_cmd %{__gpg} gpg --no-verbose --no-armor --no-secmem-warning --batch --pinentry-mode loopback --passphrase-file %{_gpg_passphrase_file} --digest-algo sha256 -u "%{_gpg_name}" -sbo %{__signature_filename} %{__plaintext_filename}'
+          } > "$HOME/.rpmmacros"
+
+          shopt -s nullglob
+          pkgs=(rpms/*.rpm)
+          [ ${#pkgs[@]} -gt 0 ] || { echo "::error::no .rpm to sign"; exit 1; }
+
+          for p in "${pkgs[@]}"; do rpmsign --addsign "$p"; done
+
+          # Verify against the public half only: what succeeds here is exactly what a user's dnf will check.
+          RPMDB="$HOME/rpmdb"; mkdir -p "$RPMDB"
+          rpm --dbpath "$RPMDB" --initdb
+          gpg --batch --armor --export "$KEYID" > "$HOME/pub.asc"
+          rpmkeys --dbpath "$RPMDB" --import "$HOME/pub.asc"
+
+          for p in "${pkgs[@]}"; do
+            sig="$(rpm -qpi --nosignature "$p" 2>/dev/null | sed -n 's/^Signature *: //p')"
+            case "$sig" in
+              ''|'(none)') echo "::error::$(basename "$p") is still unsigned"; exit 1 ;;
+            esac
+            rpmkeys --dbpath "$RPMDB" --checksig "$p" >/dev/null \
+              || { echo "::error::$(basename "$p") failed signature verification"; exit 1; }
+            echo "$(basename "$p"): $sig"
+          done
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a   #v7.0.1
+        with:
+          name: ${{ matrix.artifact }}
+          path: rpms/*.rpm
+          if-no-files-found: error
+          overwrite: true
           retention-days: ${{ inputs.retention-days }}
 
 #================================================================================================

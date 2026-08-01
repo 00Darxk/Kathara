@@ -92,6 +92,12 @@ jobs:
     uses: ./.github/workflows/_build.yml
     with:
       version: ${{ needs.version.outputs.version }}
+      # The RPMs must be signed before SHA256SUMS is computed below, so that the checksums published on the release cover the signed artifacts.
+      sign-rpm: true
+      # Switch to the self-hosted runner once the signing key lives on it:
+      #   rpm-signer-runs-on: 'self-hosted'
+      rpm-signer-runs-on: 'ubuntu-24.04'
+    secrets: inherit
 
   release:
     name: Draft release ${{ needs.version.outputs.version }}
@@ -166,15 +172,37 @@ jobs:
             printf '%s  %s\n' "$(sha256sum "$f" | cut -d' ' -f1)" "$(basename "$f")" >> SHA256SUMS
           done
 
-          # Safety net for the GitLab contract: fail loudly if, for any reason, no .deb made it into the list.
-          # Everything else is optional; the .deb packages are not.
+          # Safety net for the GitLab contract: fail loudly if, for any reason, no .deb or no .rpm made it into the list.
+          # Everything else is optional; the packages of the Linux repositories are not.
           deb_count="$(grep -c '\.deb$' SHA256SUMS || true)"
           if [ "$deb_count" -eq 0 ]; then
-            echo "::error::SHA256SUMS contains no .deb entries — the APT pipeline would have nothing to verify"
+            echo "::error::SHA256SUMS contains no .deb entries — the APT side would have nothing to verify"
+            exit 1
+          fi
+          rpm_count="$(grep -c '\.rpm$' SHA256SUMS || true)"
+          if [ "$rpm_count" -eq 0 ]; then
+            echo "::error::SHA256SUMS contains no .rpm entries — the YUM side would have nothing to verify"
             exit 1
           fi
 
-          echo "Checksummed ${#assets[@]} assets ($deb_count .deb):"
+          # The configuration packages are the vehicle for key rotation: a release without them would strand users on the current keys.
+          grep -q '^.*  kathara-archive-keyring_.*_all\.deb$' SHA256SUMS \
+            || { echo "::error::no kathara-archive-keyring .deb in the release"; exit 1; }
+          grep -q '^.*  kathara-release-.*\.noarch\.rpm$' SHA256SUMS \
+            || { echo "::error::no kathara-release .rpm in the release"; exit 1; }
+
+          # Last gate before the checksums become canonical: every .rpm must already carry a signature.
+          # If rpm-sign was skipped or silently failed, the release stops here rather than shipping unsigned packages whose checksums are then blessed downstream.
+          sudo apt-get update -qq && sudo apt-get install -y -qq rpm
+          while IFS= read -r r; do
+            sig="$(rpm -qpi --nosignature "$r" 2>/dev/null | sed -n 's/^Signature *: //p')"
+            case "$sig" in
+              ''|'(none)') echo "::error::unsigned RPM in the release: $r"; exit 1 ;;
+            esac
+            echo "signed: $(basename "$r") — $sig"
+          done < <(find . -type f -name '*.rpm')
+
+          echo "Checksummed ${#assets[@]} assets ($deb_count .deb, $rpm_count .rpm):"
           cat SHA256SUMS
 
       - name: Create draft release

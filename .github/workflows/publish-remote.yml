@@ -1,12 +1,13 @@
-# Triggers a GitLab pipeline via API to update the APT repository, push package to AUR and Pypi.
+# Triggers a GitLab pipeline via API to update the Linux package repositories
+# (APT + YUM, one GitLab project, one site), push the package to AUR and PyPI.
 # Triggered when a stable GitHub Release is published (drafts and prereleases are ignored).
 # Since GitLab can't parse native GitHub webhooks, this uses curl to pass the release tag.
 # It can be re-run manually via the Actions tab.
 #
 # Required configuration (in Actions Settings):
-#   Secret: GITLAB_TRIGGER_TOKEN (GitLab pipeline trigger token)
+#   Secret: GITLAB_TRIGGER_TOKEN (trigger token of the Linux repo GitLab project)
 #           PYPI_API_TOKEN       (api token 'pypi-...' for kathara pypi project)
-#   Vars:   GITLAB_PROJECT_ID    (numeric project ID)
+#   Vars:   GITLAB_PROJECT_ID    (numeric ID of the Linux repo GitLab project)
 #           GITLAB_REF           (target branch, default: main)
 #           GITLAB_API           (default: https://gitlab.com/api/v4)
 #           AUR_NAME             (git username allowed on AUR repo)
@@ -113,19 +114,18 @@ jobs:
             echo "proceed=true"  >> "$GITHUB_OUTPUT"
           fi
 
-  publish-apt:
-    name: Publish Package to APT Repo
+  publish-linux-repo:
+    name: Publish Packages to APT+YUM Repo
     runs-on: ubuntu-24.04
     needs: [gate]
     if: needs.gate.outputs.proceed == 'true'
-    steps:      
-      - name: Trigger GitLab pipeline for APT
+    steps:
+      - name: Trigger GitLab pipeline for the Linux repositories
         env:
           TRIGGER_TOKEN: ${{ secrets.GITLAB_TRIGGER_TOKEN }}
           PROJECT_ID: ${{ vars.GITLAB_PROJECT_ID }}
           GITLAB_REF: ${{ vars.GITLAB_REF || 'main' }}
           GITLAB_API: ${{ vars.GITLAB_API || 'https://gitlab.com/api/v4' }}
-          SOURCE_REPO: ${{ github.repository }}
           TAG: ${{ needs.gate.outputs.tag }}
         run: |
           set -euo pipefail
@@ -141,13 +141,13 @@ jobs:
 
           echo "Triggering $GITLAB_API project $PROJECT_ID on ref '$GITLAB_REF' for release $TAG"
 
+          # RELEASE_TAG is the ONLY variable passed: the source repository is pinned in conf/repo.conf on the GitLab side and enforced by its guard job, so a leaked trigger token cannot point the pipeline at another GitHub repository.
           # -sS quiet but keep errors; capture body and HTTP code separately so a non-201 can be reported with GitLab's own message.
           body="$(mktemp)"
           code="$(curl -sS -o "$body" -w '%{http_code}' --request POST \
                     --form "token=$TRIGGER_TOKEN" \
                     --form "ref=$GITLAB_REF" \
                     --form "variables[RELEASE_TAG]=$TAG" \
-                    --form "variables[GITHUB_REPO]=$SOURCE_REPO" \
                     "$GITLAB_API/projects/$PROJECT_ID/trigger/pipeline")"
 
           echo "HTTP $code"
@@ -166,7 +166,7 @@ jobs:
           url="$(jq -r '.web_url // empty' "$body")"
           echo "Pipeline created: ${url:-<no web_url in response>}"
           {
-            echo "### APT publish triggered"
+            echo "### APT + YUM publish triggered"
             echo ""
             echo "- Release: \`$TAG\`"
             echo "- Pipeline: ${url:-n/a}"
