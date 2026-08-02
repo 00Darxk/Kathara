@@ -83,6 +83,21 @@ See https://github.com/KatharaFramework/Kathara/blob/main/LICENSE
 EOF
 
 # --- Build ------------------------------------------------------------------
+# Reproducible output: the same version must always produce the same bytes.
+#
+# Without this, every rebuild embeds fresh mtimes, so the same
+# kathara-archive-keyring_<VER>_all.deb changes content between releases while
+# keeping its name. Anything that caches by URL — a CDN in front of the site,
+# apt-cacher-ng, a corporate proxy, a mirror — would then serve a copy whose
+# hash no longer matches the signed Packages index, and apt would fail with
+# "Hash Sum mismatch". A versioned filename has to be immutable.
+#
+# SOURCE_DATE_EPOCH is the cross-distro convention for this; it defaults to a
+# fixed date rather than "now" so that a local build matches a CI build.
+: "${SOURCE_DATE_EPOCH:=1700000000}"
+export SOURCE_DATE_EPOCH
+find "$STAGE" -exec touch -h -d "@$SOURCE_DATE_EPOCH" {} +
+
 dpkg-deb --build --root-owner-group "$STAGE" "$OUT/${PKG}_${VER}_all.deb" >/dev/null
 echo "Built $OUT/${PKG}_${VER}_all.deb"
 dpkg-deb -I "$OUT/${PKG}_${VER}_all.deb" | sed 's/^/    /'

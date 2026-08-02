@@ -65,9 +65,18 @@ sed -e "s|__VERSION__|$CONF_VERSION|g" \
     rpm/kathara-release.spec.in > "$TOP/SPECS/kathara-release.spec"
 
 # --- Build ------------------------------------------------------------------
+# Reproducible output, for the same reason as the .deb: the same version must
+# always produce the same bytes, or a cache anywhere between the site and the
+# user will serve a copy whose checksum no longer matches the signed repodata.
+# rpm honours SOURCE_DATE_EPOCH for BUILDTIME and clamps file mtimes to it.
+: "${SOURCE_DATE_EPOCH:=1700000000}"
+export SOURCE_DATE_EPOCH
+
 rpmbuild -bb \
     --define "_topdir $TOP" \
     --define "dist .fc$REL" \
+    --define "use_source_date_epoch_as_buildtime 1" \
+    --define "clamp_mtime_to_source_date_epoch 1" \
     "$TOP/SPECS/kathara-release.spec" >/dev/null
 
 built="$(find "$TOP/RPMS" -name '*.noarch.rpm' -type f)"
