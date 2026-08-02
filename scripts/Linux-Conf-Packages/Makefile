@@ -26,7 +26,7 @@
 # The public keys are committed in keys/ (see keys/README.md): they are public material, and pinning them in git means changing what users will trust requires a reviewed commit.
 # ============================================================================
 
-CONF_VERSION=1.0
+CONF_VERSION=1.1
 PACKAGE_VERSION=1
 
 REPO_URL?=https://repo.kathara.org
