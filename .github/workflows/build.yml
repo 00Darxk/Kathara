@@ -20,7 +20,7 @@ jobs:
 
   prepare:
     name: Prepare Environment
-    runs-on: ubuntu-24.04
+    runs-on: self-hosted
     outputs:
       version: ${{ steps.get_version.outputs.version }}
     steps:

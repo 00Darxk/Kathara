@@ -39,7 +39,7 @@ jobs:
 
   version:
     name: Get version
-    runs-on: ubuntu-24.04
+    runs-on: self-hosted
     permissions:
       contents: read
     outputs:
@@ -55,7 +55,7 @@ jobs:
 
   gate:
     name: Gates Pre-Releases
-    runs-on: ubuntu-24.04
+    runs-on: self-hosted
     outputs:
       proceed: ${{ steps.gate.outputs.proceed }}
       tag: ${{ steps.rel.outputs.tag }}
@@ -116,7 +116,7 @@ jobs:
 
   publish-linux-repo:
     name: Publish Packages to APT+YUM Repo
-    runs-on: ubuntu-24.04
+    runs-on: self-hosted
     needs: [gate]
     if: needs.gate.outputs.proceed == 'true'
     steps:
@@ -174,7 +174,7 @@ jobs:
 
   publish-aur:
     name: Publish Package to AUR
-    runs-on: ubuntu-24.04
+    runs-on: self-hosted
     needs: [gate, version]
     if: needs.gate.outputs.proceed == 'true'
     steps:
@@ -203,7 +203,7 @@ jobs:
 
   publish-pypi:
     name: Publish Package to Pypi
-    runs-on: ubuntu-24.04
+    runs-on: self-hosted
     needs: [gate, version]
     if: needs.gate.outputs.proceed == 'true'
     steps:
