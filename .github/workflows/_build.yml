@@ -23,7 +23,7 @@ on:
         description: 'Runner that holds the RPM signing key'
         required: false
         type: string
-        default: 'ubuntu-24.04'
+        default: 'self-hosted'
     secrets:
       RPM_GPG_PRIVATE_KEY:
         description: 'base64 of the armored RPM package signing key'
@@ -43,7 +43,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-24.04, windows-2025, macos-26]
+        os: [self-hosted]
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10   # v6.0.3
       - uses: ./.github/actions/setup-python-build
@@ -58,27 +58,27 @@ jobs:
   deb:
     name: deb-${{ matrix.distro }}-${{ matrix.arch }}
     needs: [test]
-    runs-on: ${{ matrix.runs-on }}
+    runs-on: self-hosted
     strategy:
       fail-fast: false
       matrix:
         include:
-          - { os: ubuntu, distro: focal,    arch: amd64, runs-on: ubuntu-24.04     }
-          - { os: ubuntu, distro: focal,    arch: arm64, runs-on: ubuntu-24.04-arm }
-          - { os: ubuntu, distro: jammy,    arch: amd64, runs-on: ubuntu-24.04     }
-          - { os: ubuntu, distro: jammy,    arch: arm64, runs-on: ubuntu-24.04-arm }
-          - { os: ubuntu, distro: noble,    arch: amd64, runs-on: ubuntu-24.04     }
-          - { os: ubuntu, distro: noble,    arch: arm64, runs-on: ubuntu-24.04-arm }
-          - { os: ubuntu, distro: questing, arch: amd64, runs-on: ubuntu-24.04     }
-          - { os: ubuntu, distro: questing, arch: arm64, runs-on: ubuntu-24.04-arm }
-          - { os: ubuntu, distro: resolute, arch: amd64, runs-on: ubuntu-24.04     }
-          - { os: ubuntu, distro: resolute, arch: arm64, runs-on: ubuntu-24.04-arm }
-          - { os: debian, distro: bullseye, arch: amd64, runs-on: ubuntu-24.04     }
-          - { os: debian, distro: bullseye, arch: arm64, runs-on: ubuntu-24.04-arm }
-          - { os: debian, distro: bookworm, arch: amd64, runs-on: ubuntu-24.04     }
-          - { os: debian, distro: bookworm, arch: arm64, runs-on: ubuntu-24.04-arm }
-          - { os: debian, distro: trixie,   arch: amd64, runs-on: ubuntu-24.04     }
-          - { os: debian, distro: trixie,   arch: arm64, runs-on: ubuntu-24.04-arm }
+          - { os: ubuntu, distro: focal,    arch: amd64 }
+          - { os: ubuntu, distro: focal,    arch: arm64 }
+          - { os: ubuntu, distro: jammy,    arch: amd64 }
+          - { os: ubuntu, distro: jammy,    arch: arm64 }
+          - { os: ubuntu, distro: noble,    arch: amd64 }
+          - { os: ubuntu, distro: noble,    arch: arm64 }
+          - { os: ubuntu, distro: questing, arch: amd64 }
+          - { os: ubuntu, distro: questing, arch: arm64 }
+          - { os: ubuntu, distro: resolute, arch: amd64 }
+          - { os: ubuntu, distro: resolute, arch: arm64 }
+          - { os: debian, distro: bullseye, arch: amd64 }
+          - { os: debian, distro: bullseye, arch: arm64 }
+          - { os: debian, distro: bookworm, arch: amd64 }
+          - { os: debian, distro: bookworm, arch: arm64 }
+          - { os: debian, distro: trixie,   arch: amd64 }
+          - { os: debian, distro: trixie,   arch: arm64 }
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10   # v6.0.3
       - name: Cache Deb Package
@@ -105,15 +105,15 @@ jobs:
   rpm:
     name: rpm-fc${{ matrix.release }}-${{ matrix.arch }}
     needs: [test]
-    runs-on: ${{ matrix.runs-on }}
+    runs-on: self-hosted
     strategy:
       fail-fast: false
       matrix:
         include:
-          - { release: 43, arch: x86_64,  runs-on: ubuntu-24.04,     set_arch: '--platform linux/amd64' }
-          - { release: 43, arch: aarch64, runs-on: ubuntu-24.04-arm, set_arch: '--platform linux/arm64' }
-          - { release: 44, arch: x86_64,  runs-on: ubuntu-24.04,     set_arch: '--platform linux/amd64' }
-          - { release: 44, arch: aarch64, runs-on: ubuntu-24.04-arm, set_arch: '--platform linux/arm64' }
+          - { release: 43, arch: x86_64,  set_arch: '--platform linux/amd64' }
+          - { release: 43, arch: aarch64, set_arch: '--platform linux/arm64' }
+          - { release: 44, arch: x86_64,  set_arch: '--platform linux/amd64' }
+          - { release: 44, arch: aarch64, set_arch: '--platform linux/arm64' }
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10   # v6.0.3
       - name: Cache Rpm Package
@@ -151,7 +151,7 @@ jobs:
   conf-deb:
     name: conf-deb-${{ matrix.distro }}
     needs: [test]
-    runs-on: ubuntu-24.04
+    runs-on: self-hosted
     strategy:
       fail-fast: false
       matrix:
@@ -175,7 +175,7 @@ jobs:
   conf-rpm:
     name: conf-rpm-fc${{ matrix.release }}
     needs: [test]
-    runs-on: ubuntu-24.04
+    runs-on: self-hosted
     strategy:
       fail-fast: false
       matrix:
@@ -324,7 +324,7 @@ jobs:
   pkg:
     name: pkg-any
     needs: [test]
-    runs-on: ubuntu-24.04
+    runs-on: self-hosted
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10   # v6.0.3
       - name: Cache Pkg Package
@@ -356,7 +356,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { arch: x64,   runs-on: ubuntu-24.04 }
+          - { arch: x64,   runs-on: self-hosted }
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10   # v6.0.3
       - uses: ./.github/actions/setup-python-build
@@ -385,13 +385,13 @@ jobs:
   macos:
     name: macos-${{ matrix.arch }}
     needs: [test]
-    runs-on: ${{ matrix.runs-on }}
+    runs-on: self-hosted
     strategy:
       fail-fast: false
       matrix:
         include:
-          - { arch: arm64,  make: all_arm64, runs-on: macos-26 }
-          - { arch: x86_64, make: all_x86,   runs-on: macos-26-intel }
+          - { arch: arm64,  make: all_arm64 }
+          - { arch: x86_64, make: all_x86   }
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10   # v6.0.3
       - name: Cache OSX Package
