@@ -97,7 +97,10 @@ jobs:
       # Switch to the self-hosted runner once the signing key lives on it:
       #   rpm-signer-runs-on: 'self-hosted'
       rpm-signer-runs-on: 'ubuntu-24.04'
-    secrets: inherit
+    # Only the two secrets _build.yml declares.
+    secrets:
+      RPM_GPG_PRIVATE_KEY: ${{ secrets.RPM_GPG_PRIVATE_KEY }}
+      RPM_GPG_PASSPHRASE: ${{ secrets.RPM_GPG_PASSPHRASE }}
 
   release:
     name: Draft release ${{ needs.version.outputs.version }}
