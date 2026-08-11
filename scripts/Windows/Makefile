@@ -5,9 +5,11 @@ PACKAGE_VERSION=1
 
 .PHONY: all docker-build-installer docker-build-executable docker-build-image-pyinstaller prepare-source prepare-executable clean-assets clean
 
-all: clean docker-build-installer clean-assets
+all_x64: clean docker-build-installer_x64 clean-assets
 
-docker-build-installer: docker-build-executable prepare-executable_x64
+default: all_x64
+
+docker-build-installer_%: docker-build-executable prepare-executable_%
 	chmod -R a+w Output && umask a+w
 	docker run --rm -v `pwd`/Output:/work $(SET_ARCH) amake/innosetup installer.iss
 	sudo chown -R $(shell id -u):$(shell id -g) Output
