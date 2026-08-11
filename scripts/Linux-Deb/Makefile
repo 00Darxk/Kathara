@@ -2,7 +2,6 @@
 
 VERSION=__KATHARA_VERSION__
 DEBIAN_PACKAGE_VERSION=1
-NO_BINARY_PACKAGES=pyroute2
 OS=ubuntu
 
 .PHONY: docker-build-image prepare-deb-source unpack-deb-source clean-output-folder copy-debian-folder download-pip build-man build-deb-unsigned clean venv autocompletion
@@ -45,29 +44,6 @@ copy-debian-folder:
 venv:
 	python3.13 -m venv /root/py-build-env
 
-download-pip: copy-debian-folder
-	mkdir Output/kathara-$(VERSION)/debian/pythonLibs_amd64
-	mkdir Output/kathara-$(VERSION)/debian/pythonLibs_arm64
-	grep -Ev "$(NO_BINARY_PACKAGES)" Output/kathara-$(VERSION)/requirements.txt > Output/kathara-$(VERSION)/requirements-binary.txt
-	grep -E "$(NO_BINARY_PACKAGES)" Output/kathara-$(VERSION)/requirements.txt > Output/kathara-$(VERSION)/requirements-no-binary.txt
-	cd Output/kathara-$(VERSION)/debian/pythonLibs_amd64 && /root/py-build-env/bin/pip download --platform manylinux2014_x86_64 --only-binary=:all: flit_core
-	cd Output/kathara-$(VERSION)/debian/pythonLibs_amd64 && /root/py-build-env/bin/pip download --platform manylinux2014_x86_64 --only-binary=:all: wheel
-	cd Output/kathara-$(VERSION)/debian/pythonLibs_amd64 && /root/py-build-env/bin/pip download --platform manylinux2014_x86_64 --only-binary=:all: zstandard
-	cd Output/kathara-$(VERSION)/debian/pythonLibs_amd64 && /root/py-build-env/bin/pip download --no-binary=:all: -r ../../requirements-no-binary.txt
-	cd Output/kathara-$(VERSION)/debian/pythonLibs_amd64 && /root/py-build-env/bin/pip download --platform manylinux2014_x86_64 --platform x86_64 --only-binary=:all: -r ../../requirements-binary.txt
-	cd Output/kathara-$(VERSION)/debian/pythonLibs_amd64 && /root/py-build-env/bin/pip download --platform manylinux2014_x86_64 --only-binary=:all: pyinstaller "setuptools<81.0.0"
-	cd Output/kathara-$(VERSION)/debian/pythonLibs_arm64 && /root/py-build-env/bin/pip download --platform manylinux2014_aarch64 --only-binary=:all: flit_core
-	cd Output/kathara-$(VERSION)/debian/pythonLibs_arm64 && /root/py-build-env/bin/pip download --platform manylinux2014_aarch64 --only-binary=:all: wheel
-	cd Output/kathara-$(VERSION)/debian/pythonLibs_arm64 && /root/py-build-env/bin/pip download --platform manylinux2014_aarch64 --only-binary=:all: zstandard
-	cd Output/kathara-$(VERSION)/debian/pythonLibs_arm64 && /root/py-build-env/bin/pip download --no-binary=:all: -r ../../requirements-no-binary.txt
-	cd Output/kathara-$(VERSION)/debian/pythonLibs_arm64 && /root/py-build-env/bin/pip download --platform manylinux2014_aarch64 --platform arm64 --only-binary=:all: -r ../../requirements-binary.txt
-	cd Output/kathara-$(VERSION)/debian/pythonLibs_arm64 && /root/py-build-env/bin/pip download --platform manylinux2014_aarch64 --only-binary=:all: pyinstaller "setuptools<81.0.0"
-	rm Output/kathara-$(VERSION)/debian/pythonLibs_arm64/zstandard*.whl
-	rm Output/kathara-$(VERSION)/debian/pythonLibs_amd64/zstandard*.whl
-	rm -Rf Output/kathara-$(VERSION)/requirements-binary.txt Output/kathara-$(VERSION)/requirements-no-binary.txt
-	ls Output/kathara-$(VERSION)/debian/pythonLibs_amd64/ | awk '{print "debian/pythonLibs_amd64/"$$0}' > Output/kathara-$(VERSION)/debian/source/include-binaries
-	ls Output/kathara-$(VERSION)/debian/pythonLibs_arm64/ | awk '{print "debian/pythonLibs_arm64/"$$0}' >> Output/kathara-$(VERSION)/debian/source/include-binaries
-
 build-man: copy-debian-folder
 	cd ../../docs && make roff-build
 	cp -r ../../docs/Roff Output/kathara-$(VERSION)/debian/manpages
@@ -79,14 +55,9 @@ autocompletion:
 	/root/py-build-env/bin/pip install -r ../autocompletion/requirements.txt
 	/root/py-build-env/bin/python3 ../autocompletion/generate_autocompletion.py Output/kathara-$(VERSION)/debian/kathara.bash-completion
 
-build-deb-unsigned: venv build-man autocompletion download-pip
+build-deb-unsigned: venv build-man autocompletion
 	sed -i -e 's/__UBUNTU_VERSION__/$(distro)/g' Output/kathara-$(VERSION)/debian/changelog
 	cd Output/kathara-$(VERSION); debuild -us -uc
-
-build-deb-signed: venv build-man autocompletion download-pip
-	cp -r /root/gnupg-host/. /root/.gnupg
-	sed -i -e 's/__UBUNTU_VERSION__/$(distro)/g' Output/kathara-$(VERSION)/debian/changelog
-	cd Output/kathara-$(VERSION); debuild -S -sa
 
 clean:
 	if [ -d Output ]; then \

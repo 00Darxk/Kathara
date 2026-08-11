@@ -1,7 +1,5 @@
 #!/usr/bin/make -f
 
-ARCHITECTURE:=$(shell dpkg-architecture -qDEB_HOST_ARCH)
-
 %:
 	dh $@ --with bash-completion
 
@@ -12,7 +10,8 @@ override_dh_auto_clean:
 
 override_dh_auto_configure:
 	python3.13 -m venv $(CURDIR)/venv
-	$(CURDIR)/venv/bin/pip3.13 install --no-index --find-links $(CURDIR)/debian/pythonLibs_$(ARCHITECTURE)/ $(CURDIR)/debian/pythonLibs_$(ARCHITECTURE)/*
+	$(CURDIR)/venv/bin/pip3.13 install -r $(CURDIR)/requirements.txt
+	$(CURDIR)/venv/bin/pip3.13 install pyinstaller
 
 override_dh_auto_build:
 	$(CURDIR)/venv/bin/pyinstaller --distpath=./kathara.dist --workpath=./kathara.build kathara.spec
