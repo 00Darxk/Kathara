@@ -4,7 +4,7 @@ VERSION=__KATHARA_VERSION__
 DEBIAN_PACKAGE_VERSION=1
 OS=ubuntu
 
-.PHONY: docker-build-image prepare-deb-source unpack-deb-source clean-output-folder copy-debian-folder download-pip build-man build-deb-unsigned clean venv autocompletion
+.PHONY: docker-build-image prepare-deb-source unpack-deb-source clean-output-folder copy-debian-folder build-man build-deb-unsigned clean venv autocompletion
 
 docker-unsigned_%: clean prepare-deb-source docker-build-image_%
 	docker run --rm -v `pwd`/../../:/opt/kathara $(SET_ARCH) kathara/linux-build-deb:$* /bin/bash -c \
