@@ -7,6 +7,7 @@
 # Required configuration (in Actions Settings):
 #   Secret: GITLAB_TRIGGER_TOKEN (trigger token of the Linux repo GitLab project)
 #           PYPI_API_TOKEN       (api token 'pypi-...' for kathara pypi project)
+#           AUR_SSH_KEY          (authorized ssh key to push on AUR)
 #   Vars:   GITLAB_PROJECT_ID    (numeric ID of the Linux repo GitLab project)
 #           GITLAB_REF           (target branch, default: main)
 #           GITLAB_API           (default: https://gitlab.com/api/v4)
@@ -192,6 +193,7 @@ jobs:
           sed -i -e "s|__KATHARA_VERSION__|$VERSION|g" Makefile
           sed -i -e "s|__AUR_NAME__|$AUR_NAME|g" Makefile
           sed -i -e "s|__AUR_EMAIL__|$AUR_EMAIL|g" Makefile
+          echo "${{ secrets.AUR_SSH_KEY }}" > ~/.ssh/id_rsa && chmod 600 ~/.ssh/id_rsa # don't do this
           make allRemote
 
           {
