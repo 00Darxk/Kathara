@@ -18,13 +18,13 @@ allSigned_arm64: cleanall deps binary_arm64 manpages createInstaller_arm64 signP
 default: all
 
 py_env:
-	python3 -m venv $(VENV_DIR)
+	$(SET_ARCH) python3 -m venv $(VENV_DIR)
 
 deps: py_env
-	$(VENV_DIR)/bin/pip install -U "setuptools<81"
-	$(VENV_DIR)/bin/pip install "pyinstaller==6.18.0"
-	$(VENV_DIR)/bin/pip install -r ../../src/requirements.txt
-	$(VENV_DIR)/bin/pip install pytest
+	$(SET_ARCH) $(VENV_DIR)/bin/pip install -U "setuptools<81"
+	$(SET_ARCH) $(VENV_DIR)/bin/pip install "pyinstaller==6.18.0"
+	$(SET_ARCH) $(VENV_DIR)/bin/pip install -r ../../src/requirements.txt
+	$(SET_ARCH) $(VENV_DIR)/bin/pip install pytest
 	gem install ronn-ng
 
 manpages:
@@ -37,12 +37,12 @@ manpages:
 	done;
 
 test:
-	cd ../.. && $(VENV_DIR)/bin/python3 -m pytest
+	cd ../.. && $(SET_ARCH) $(VENV_DIR)/bin/python3 -m pytest
 
 binary_%: test
 	cp ./kathara.spec ../../src/
 	sed -i '' -e "s:__ARCH__:$*:g" ../../src/kathara.spec
-	cd ../../src && $(VENV_DIR)/bin/pyinstaller --distpath=./kathara.dist --workpath=./kathara.build kathara.spec
+	cd ../../src && $(SET_ARCH) $(VENV_DIR)/bin/pyinstaller --distpath=./kathara.dist --workpath=./kathara.build kathara.spec
 
 copyBuildDirectory_%: binary_% manpages
 	[ -d $(TARGET_DIRECTORY) ] || mkdir $(TARGET_DIRECTORY)
