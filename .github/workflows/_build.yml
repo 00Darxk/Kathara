@@ -154,7 +154,7 @@ jobs:
     name: sign-${{ matrix.artifact }}
     needs: [rpm]
     if: ${{ inputs.sign-rpm }}
-    runs-on: ${{ inputs.rpm-signer-runs-on }}
+    runs-on: [self-hosted, linux]
     strategy:
       fail-fast: false
       max-parallel: 1          # one signing key, one runs-on
@@ -176,7 +176,7 @@ jobs:
           RPM_GPG_PRIVATE_KEY: ${{ secrets.RPM_GPG_PRIVATE_KEY }}
           RPM_GPG_PASSPHRASE: ${{ secrets.RPM_GPG_PASSPHRASE }}
         run: |
-          set -euo pipefail
+          set -euox pipefail
 
           command -v rpmsign >/dev/null 2>&1 || {
             sudo apt-get update -qq && sudo apt-get install -y -qq rpm
