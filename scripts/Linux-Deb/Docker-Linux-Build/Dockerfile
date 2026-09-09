@@ -1,4 +1,4 @@
-FROM __OS__:__DISTRO__
+FROM ubuntu:jammy
 
 ENV TZ=Europe/Rome
 ENV RUBYOPT="-KU -E utf-8:utf-8"
@@ -47,7 +47,7 @@ RUN (DEBIAN_FRONTEND=noninteractive apt install -y \
 	python3.14-pip) || \
 	(apt install -y gpg curl && \
 	curl -fsSl "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0xf23c5a6cf475977595c89f51ba6932366a755776" | gpg --dearmor -o /etc/apt/trusted.gpg.d/deadsnakes.gpg && \
-	echo 'deb https://ppa.launchpadcontent.net/deadsnakes/ppa/ubuntu __DISTRO__ main' > /etc/apt/sources.list.d/deadsnakes.list) && \
+	echo 'deb https://ppa.launchpadcontent.net/deadsnakes/ppa/ubuntu jammy main' > /etc/apt/sources.list.d/deadsnakes.list) && \
 	(apt update && DEBIAN_FRONTEND=noninteractive apt install -y \
 	python3.14 \
 	python3.14-dev \
@@ -58,7 +58,7 @@ RUN (DEBIAN_FRONTEND=noninteractive apt install -y \
 	python3.13-dev \
 	python3.13-venv \
 	python3-pip) || \
-	(echo "no python...?" && exit 1)
+	echo "no python...?" && exit 1
 
 RUN gem install ronn-ng
 
