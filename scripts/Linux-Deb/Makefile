@@ -8,7 +8,7 @@ OS=ubuntu
 
 docker-unsigned_%: clean prepare-deb-source docker-build-image_%
 	docker run --rm -v `pwd`/../../:/opt/kathara $(SET_ARCH) kathara/linux-build-deb:$* /bin/bash -c \
-	 	"make build-deb-unsigned distro=$* && chown -R $(shell id -u):$(shell id -g) Output && make cleanbinary"
+	 	"echo `pwd` && make build-deb-unsigned distro=$* && chown -R $(shell id -u):$(shell id -g) Output && make cleanbinary"
 
 docker-build-image_%:
 	cd Docker-Linux-Build && cp Dockerfile_template Dockerfile
