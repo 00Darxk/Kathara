@@ -9,9 +9,9 @@ override_dh_auto_clean:
 	find . | grep -E "(__pycache__|\.pyc|\.pyo)$$" | xargs rm -rf
 
 override_dh_auto_configure:
-	python3.13 -m venv $(CURDIR)/venv
-	$(CURDIR)/venv/bin/pip3.13 install -r $(CURDIR)/requirements.txt
-	$(CURDIR)/venv/bin/pip3.13 install pyinstaller
+	python3 -m venv $(CURDIR)/venv
+	$(CURDIR)/venv/bin/pip3 install -r $(CURDIR)/requirements.txt
+	$(CURDIR)/venv/bin/pip3 install pyinstaller
 
 override_dh_auto_build:
 	$(CURDIR)/venv/bin/pyinstaller --distpath=./kathara.dist --workpath=./kathara.build kathara.spec
