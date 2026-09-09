@@ -48,7 +48,7 @@ jobs:
 
       - name: Run PyTest
         shell: bash
-        run: python -m pytest
+        run: python3 -m pytest
 
 #================================================================================================
   deb:
