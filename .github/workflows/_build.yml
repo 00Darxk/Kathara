@@ -50,8 +50,8 @@ jobs:
         shell: bash
         run: |
           python3 -m venv venv
-          ./venv/bin/pip3 install pytest
-          ./venv/bin/pip3 install -r src/requirements.txt
+          ./venv/bin/python3 -m pip3 install pytest
+          ./venv/bin/python3 -m pip3 install -r src/requirements.txt
           ./venv/bin/python3 -m pytest
 
 #================================================================================================
