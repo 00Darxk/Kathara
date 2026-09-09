@@ -354,9 +354,6 @@ jobs:
           - { arch: x64, runs-on: [ self-hosted, x64 ] }
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10   # v6.0.3
-      - uses: ./.github/actions/setup-python-build
-        with:
-          python-version: '3.13'
       - name: Cache Windows Installer
         id: cache-win
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae    #v5.0.5
@@ -380,7 +377,7 @@ jobs:
   macos:
     name: macos-${{ matrix.arch }}
     needs: [test]
-    runs-on: [self-hosted, ARM64]
+    runs-on: [self-hosted, macOS, ARM64]
     strategy:
       fail-fast: false
       matrix:
