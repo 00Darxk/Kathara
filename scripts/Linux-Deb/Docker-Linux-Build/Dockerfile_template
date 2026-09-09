@@ -53,11 +53,6 @@ RUN (DEBIAN_FRONTEND=noninteractive apt install -y \
 	python3.14-dev \
 	python3.14-venv \
 	python3-pip) || \
-	(DEBIAN_FRONTEND=noninteractive apt install -y \
-	python3.13 \
-	python3.13-dev \
-	python3.13-venv \
-	python3-pip) || \
 	(echo "no python...?" && exit 1)
 
 RUN gem install ronn-ng

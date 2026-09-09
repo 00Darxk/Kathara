@@ -92,7 +92,6 @@ jobs:
         shell: bash
         run: |
           cd scripts/Linux-Deb
-          echo `pwd`
           sed -i -e "s|__KATHARA_VERSION__|${{ inputs.version }}|g" Makefile
           make docker-unsigned_${{ matrix.distro }} OS=${{ matrix.os }}
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a   #v7.0.1
@@ -354,7 +353,7 @@ jobs:
         run: |
           cd scripts/OSX
           sed -i '' -e "s|__KATHARA_VERSION__|${{ inputs.version }}|g" Makefile
-          make ${{ matrix.make }} # SET_ARCH='${{ matrix.set_arch }}'
+          make ${{ matrix.make }} SET_ARCH='${{ matrix.set_arch }}'
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a   #v7.0.1
         with:
           name: macos-${{ matrix.arch }}
