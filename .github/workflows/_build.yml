@@ -39,11 +39,7 @@ jobs:
 
   test:
     name: pytest (${{ matrix.os }})
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [self-hosted, ARM64]
+    runs-on: ARM64
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10   # v6.0.3
       - uses: ./.github/actions/setup-python-build
@@ -63,22 +59,22 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { os: ubuntu, distro: focal,    arch: amd64, runs-on: [ self-hosted, x64  ] }
-          - { os: ubuntu, distro: focal,    arch: arm64, runs-on: [ self-hosted, ARM64] }
-          - { os: ubuntu, distro: jammy,    arch: amd64, runs-on: [ self-hosted, x64  ] }
-          - { os: ubuntu, distro: jammy,    arch: arm64, runs-on: [ self-hosted, ARM64] }
-          - { os: ubuntu, distro: noble,    arch: amd64, runs-on: [ self-hosted, x64  ] }
-          - { os: ubuntu, distro: noble,    arch: arm64, runs-on: [ self-hosted, ARM64] }
-          - { os: ubuntu, distro: questing, arch: amd64, runs-on: [ self-hosted, x64  ] }
-          - { os: ubuntu, distro: questing, arch: arm64, runs-on: [ self-hosted, ARM64] }
-          - { os: ubuntu, distro: resolute, arch: amd64, runs-on: [ self-hosted, x64  ] }
-          - { os: ubuntu, distro: resolute, arch: arm64, runs-on: [ self-hosted, ARM64] }
-          - { os: debian, distro: bullseye, arch: amd64, runs-on: [ self-hosted, x64  ] }
-          - { os: debian, distro: bullseye, arch: arm64, runs-on: [ self-hosted, ARM64] }
-          - { os: debian, distro: bookworm, arch: amd64, runs-on: [ self-hosted, x64  ] }
-          - { os: debian, distro: bookworm, arch: arm64, runs-on: [ self-hosted, ARM64] }
-          - { os: debian, distro: trixie,   arch: amd64, runs-on: [ self-hosted, x64  ] }
-          - { os: debian, distro: trixie,   arch: arm64, runs-on: [ self-hosted, ARM64] }
+          - { os: ubuntu, distro: focal,    arch: amd64, runs-on: x64   }
+          - { os: ubuntu, distro: focal,    arch: arm64, runs-on: ARM64 }
+          - { os: ubuntu, distro: jammy,    arch: amd64, runs-on: x64   }
+          - { os: ubuntu, distro: jammy,    arch: arm64, runs-on: ARM64 }
+          - { os: ubuntu, distro: noble,    arch: amd64, runs-on: x64   }
+          - { os: ubuntu, distro: noble,    arch: arm64, runs-on: ARM64 }
+          - { os: ubuntu, distro: questing, arch: amd64, runs-on: x64   }
+          - { os: ubuntu, distro: questing, arch: arm64, runs-on: ARM64 }
+          - { os: ubuntu, distro: resolute, arch: amd64, runs-on: x64   }
+          - { os: ubuntu, distro: resolute, arch: arm64, runs-on: ARM64 }
+          - { os: debian, distro: bullseye, arch: amd64, runs-on: x64   }
+          - { os: debian, distro: bullseye, arch: arm64, runs-on: ARM64 }
+          - { os: debian, distro: bookworm, arch: amd64, runs-on: x64   }
+          - { os: debian, distro: bookworm, arch: arm64, runs-on: ARM64 }
+          - { os: debian, distro: trixie,   arch: amd64, runs-on: x64   }
+          - { os: debian, distro: trixie,   arch: arm64, runs-on: ARM64 }
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10   # v6.0.3
       - name: Cache Deb Package
@@ -110,10 +106,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { release: 43, arch: x86_64,  runs-on: [ self-hosted, x64  ] }
-          - { release: 43, arch: aarch64, runs-on: [ self-hosted, ARM64] }
-          - { release: 44, arch: x86_64,  runs-on: [ self-hosted, x64  ] }
-          - { release: 44, arch: aarch64, runs-on: [ self-hosted, ARM64] }
+          - { release: 43, arch: x86_64,  runs-on: x64   }
+          - { release: 43, arch: aarch64, runs-on: ARM64 }
+          - { release: 44, arch: x86_64,  runs-on: x64   }
+          - { release: 44, arch: aarch64, runs-on: ARM64 }
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10   # v6.0.3
       - name: Cache Rpm Package
@@ -355,7 +351,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { arch: x64, runs-on: [ self-hosted, x64 ] }
+          - { arch: x64, runs-on: x64 }
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10   # v6.0.3
       - uses: ./.github/actions/setup-python-build
@@ -389,8 +385,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { arch: arm64,  make: all_arm64, set_arch: ''            , runs-on: [ self-hosted, ARM64 ] }
-          - { arch: x86_64, make: all_x86  , set_arch: 'arch -x86_64', runs-on: [ self-hosted, x64   ] }
+          - { arch: arm64,  make: all_arm64, set_arch: ''            , runs-on: ARM64 }
+          - { arch: x86_64, make: all_x86  , set_arch: 'arch -x86_64', runs-on: x64   }
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10   # v6.0.3
       - name: Cache OSX Package
