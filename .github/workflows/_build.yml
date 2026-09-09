@@ -399,11 +399,11 @@ jobs:
       # - uses: ./.github/actions/setup-python-build
       #   with:
       #     python-version: '3.14'
-      - name: Install Ruby
-        uses: ruby/setup-ruby@89f90524b88a01fe6e0b732220432cc6142926af    #v1.313.0
-        with:
-          ruby-version: '4.0'
-          bundler-cache: true
+      # - name: Install Ruby
+      #   uses: ruby/setup-ruby@89f90524b88a01fe6e0b732220432cc6142926af    #v1.313.0
+      #   with:
+      #     ruby-version: '4.0'
+      #     bundler-cache: true
       - name: Build macOS installer
         if: steps.cache-osx.outputs.cache-hit != 'true'
         shell: bash
