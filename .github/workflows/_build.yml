@@ -73,8 +73,8 @@ jobs:
           - { os: ubuntu, distro: questing, arch: arm64, runs-on: [ self-hosted, ARM64] }
           - { os: ubuntu, distro: resolute, arch: amd64, runs-on: [ self-hosted, x64  ] }
           - { os: ubuntu, distro: resolute, arch: arm64, runs-on: [ self-hosted, ARM64] }
-          - { os: debian, distro: bullseye, arch: amd64, runs-on: [ self-hosted, x64  ] }
-          - { os: debian, distro: bullseye, arch: arm64, runs-on: [ self-hosted, ARM64] }
+          # - { os: debian, distro: bullseye, arch: amd64, runs-on: [ self-hosted, x64  ] }
+          # - { os: debian, distro: bullseye, arch: arm64, runs-on: [ self-hosted, ARM64] }
           - { os: debian, distro: bookworm, arch: amd64, runs-on: [ self-hosted, x64  ] }
           - { os: debian, distro: bookworm, arch: arm64, runs-on: [ self-hosted, ARM64] }
           - { os: debian, distro: trixie,   arch: amd64, runs-on: [ self-hosted, x64  ] }
