@@ -63,8 +63,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { os: ubuntu, distro: focal,    arch: amd64, runs-on: [ self-hosted, x64  ] }
-          - { os: ubuntu, distro: focal,    arch: arm64, runs-on: [ self-hosted, ARM64] }
+          # - { os: ubuntu, distro: focal,    arch: amd64, runs-on: [ self-hosted, x64  ] }
+          # - { os: ubuntu, distro: focal,    arch: arm64, runs-on: [ self-hosted, ARM64] }
           - { os: ubuntu, distro: jammy,    arch: amd64, runs-on: [ self-hosted, x64  ] }
           - { os: ubuntu, distro: jammy,    arch: arm64, runs-on: [ self-hosted, ARM64] }
           - { os: ubuntu, distro: noble,    arch: amd64, runs-on: [ self-hosted, x64  ] }
