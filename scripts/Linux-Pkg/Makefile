@@ -16,7 +16,7 @@ docker-build-local: docker-build-image
 	docker run -v `pwd`:/home/builduser/kathara:ro -v `pwd`/Output:/home/builduser/output -v `pwd`/../..:/home/builduser/kathara-source/Kathara-$(VERSION):ro  kathara/linux-build-pkg /usr/bin/su -c \
 		"chown builduser:builduser /home/builduser/output && \
 		su -c 'make -f /home/builduser/kathara/Makefile build-local' builduser && \
-		chown -R $$(shell id -u):$$(shell id -g) /home/builduser/output"
+		chown -R $(shell id -u):$(shell id -g) /home/builduser/output"
 
 docker-build-remote: docker-build-image
 	docker run --rm -v `pwd`:/home/builduser/kathara:ro kathara/linux-build-pkg /usr/bin/su -c \

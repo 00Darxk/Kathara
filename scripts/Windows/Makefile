@@ -12,11 +12,11 @@ default: all_x64
 docker-build-installer_%: docker-build-executable prepare-executable_%
 	chmod -R a+w Output && umask a+w
 	docker run --rm -v `pwd`/Output:/work $(SET_ARCH) amake/innosetup installer.iss
-	sudo chown -R $$(shell id -u):$$(shell id -g) Output
+	sudo chown -R $(shell id -u):$(shell id -g) Output
 
 docker-build-executable: docker-build-image-pyinstaller prepare-source
 	docker run --rm -v `pwd`/Output/src/:/src/ $(SET_ARCH) kathara/windows-pyinstaller
-	sudo chown -R $$(shell id -u):$$(shell id -g) Output
+	sudo chown -R $(shell id -u):$(shell id -g) Output
 
 docker-build-image-pyinstaller:
 	cd Docker-Windows-Build && cp Dockerfile_pyinstaller Dockerfile
