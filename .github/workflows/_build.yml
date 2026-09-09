@@ -138,76 +138,21 @@ jobs:
           retention-days: ${{ inputs.retention-days }}
 
 #================================================================================================
-# conf-deb / conf-rpm — the two repository configuration packages.
-#
-# - kathara-archive-keyring (.deb, Architecture: all, one per suite)
-# - kathara-release (.rpm, noarch, one per Fedora release)
-# Carry the signing keys and the repository definition to users, so key rotations and repository changes ship as regular upgrades.
-# Their version is independent of the Kathara version (see scripts/Linux-Conf-Packages/Makefile).
-#
-# LINUX_REPO_URL (Actions variable) overrides the production URL for test instances of the repository site.
-#================================================================================
-  conf-deb:
-    name: conf-deb-${{ matrix.distro }}
-    needs: [test]
-    runs-on: self-hosted
-    strategy:
-      fail-fast: false
-      matrix:
-        distro: [jammy, noble, resolute, trixie, focal, bookworm, bullseye, questing]
-    steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10   # v6.0.3
-      - name: Build keyring package
-        shell: bash
-        env:
-          REPO_URL: ${{ vars.LINUX_REPO_URL || 'https://repo.kathara.org' }}
-        run: |
-          cd scripts/Linux-Conf-Packages
-          make deb_${{ matrix.distro }}
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a   #v7.0.1
-        with:
-          name: conf-deb-${{ matrix.distro }}
-          path: scripts/Linux-Conf-Packages/Output/*.deb
-          if-no-files-found: error
-          retention-days: ${{ inputs.retention-days }}
-
-  conf-rpm:
-    name: conf-rpm-fc${{ matrix.release }}
-    needs: [test]
-    runs-on: self-hosted
-    strategy:
-      fail-fast: false
-      matrix:
-        release: [43, 44]
-    steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10   # v6.0.3
-      - name: Build release package
-        shell: bash
-        env:
-          REPO_URL: ${{ vars.LINUX_REPO_URL || 'https://repo.kathara.org' }}
-        run: |
-          sudo apt-get update -qq && sudo apt-get install -y -qq rpm
-          cd scripts/Linux-Conf-Packages
-          make rpm_${{ matrix.release }}
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a   #v7.0.1
-        with:
-          name: conf-rpm-fc${{ matrix.release }}
-          path: scripts/Linux-Conf-Packages/Output/*.rpm
-          if-no-files-found: error
-          retention-days: ${{ inputs.retention-days }}
-
-#================================================================================================
 # rpm-sign — the packages are signed HERE, on GitHub, before release.yml computes SHA256SUMS.
 # The GitHub release is therefore the single source of truth:
 # the GitLab pipeline only verifies, lays out and indexes what it downloads, and never has to modify a package (which would change its checksum).
 #
 # Runs only on the release path (sign-rpm: true), so pull request builds never touch the key.
 # Re-uploads each artifact under the same name with overwrite, so no unsigned copy survives to reach the release.
-# The kathara-release configuration package goes through here like every other .rpm: dnf with gpgcheck=1 would refuse it unsigned.
+#
+# Only the Kathara packages pass through here. The repository configuration
+# packages (kathara-archive-keyring, kathara-release) are built and signed by
+# the repository project itself, from its own conf/repo.conf: they carry that
+# site's URL, keys and layout, none of which this repository knows about.
 #================================================================================
   rpm-sign:
     name: sign-${{ matrix.artifact }}
-    needs: [rpm, conf-rpm]
+    needs: [rpm]
     if: ${{ inputs.sign-rpm }}
     runs-on: ${{ inputs.rpm-signer-runs-on }}
     strategy:
@@ -219,8 +164,6 @@ jobs:
           - rpm-fc43-aarch64
           - rpm-fc44-x86_64
           - rpm-fc44-aarch64
-          - conf-rpm-fc43
-          - conf-rpm-fc44
     steps:
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c   # v8.0.1
         with:

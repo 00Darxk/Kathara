@@ -188,12 +188,6 @@ jobs:
             exit 1
           fi
 
-          # The configuration packages are the vehicle for key rotation: a release without them would strand users on the current keys.
-          grep -q '^.*  kathara-archive-keyring_.*_all\.deb$' SHA256SUMS \
-            || { echo "::error::no kathara-archive-keyring .deb in the release"; exit 1; }
-          grep -q '^.*  kathara-release-.*\.noarch\.rpm$' SHA256SUMS \
-            || { echo "::error::no kathara-release .rpm in the release"; exit 1; }
-
           # Last gate before the checksums become canonical: every .rpm must already carry a signature.
           # If rpm-sign was skipped or silently failed, the release stops here rather than shipping unsigned packages whose checksums are then blessed downstream.
           sudo apt-get update -qq && sudo apt-get install -y -qq rpm
