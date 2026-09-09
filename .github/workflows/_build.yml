@@ -41,10 +41,10 @@ jobs:
     name: pytest (${{ matrix.os }})
     runs-on: [self-hosted, ARM64]
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10   # v6.0.3
-      - uses: ./.github/actions/setup-python-build
-        with:
-          python-version: '3.14'
+      # - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10   # v6.0.3
+      # - uses: ./.github/actions/setup-python-build
+      #   with:
+      #     python-version: '3.14'
 
       - name: Run PyTest
         shell: bash
@@ -392,9 +392,9 @@ jobs:
         with:
           path: scripts/OSX/Output
           key: pkg-${{ inputs.version }}-${{ hashFiles('src/**', 'scripts/OSX/**', '!scripts/OSX/Output/**') }}
-      - uses: ./.github/actions/setup-python-build
-        with:
-          python-version: '3.14'
+      # - uses: ./.github/actions/setup-python-build
+      #   with:
+      #     python-version: '3.14'
       - name: Install Ruby
         uses: ruby/setup-ruby@89f90524b88a01fe6e0b732220432cc6142926af    #v1.313.0
         with:
