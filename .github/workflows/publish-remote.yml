@@ -193,8 +193,7 @@ jobs:
           sed -i -e "s|__KATHARA_VERSION__|$VERSION|g" Makefile
           sed -i -e "s|__AUR_NAME__|$AUR_NAME|g" Makefile
           sed -i -e "s|__AUR_EMAIL__|$AUR_EMAIL|g" Makefile
-          echo "${{ secrets.AUR_SSH_KEY }}" > ~/.ssh/id_rsa && chmod 600 ~/.ssh/id_rsa # don't do this
-          make allRemote
+          make allRemote AUR_KEY="${{ secrets.AUR_SSH_KEY }}"
 
           {
             echo "### AUR publish triggered"
