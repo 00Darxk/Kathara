@@ -23,7 +23,7 @@ on:
         description: 'Runner that holds the RPM signing key'
         required: false
         type: string
-        default: 'self-hosted'
+        default: self-hosted
     secrets:
       RPM_GPG_PRIVATE_KEY:
         description: 'base64 of the armored RPM package signing key'
@@ -58,27 +58,27 @@ jobs:
   deb:
     name: deb-${{ matrix.distro }}-${{ matrix.arch }}
     needs: [test]
-    runs-on: self-hosted
+    runs-on: ${{ matrix.runs-on }}
     strategy:
       fail-fast: false
       matrix:
         include:
-          - { os: ubuntu, distro: focal,    arch: amd64 }
-          - { os: ubuntu, distro: focal,    arch: arm64 }
-          - { os: ubuntu, distro: jammy,    arch: amd64 }
-          - { os: ubuntu, distro: jammy,    arch: arm64 }
-          - { os: ubuntu, distro: noble,    arch: amd64 }
-          - { os: ubuntu, distro: noble,    arch: arm64 }
-          - { os: ubuntu, distro: questing, arch: amd64 }
-          - { os: ubuntu, distro: questing, arch: arm64 }
-          - { os: ubuntu, distro: resolute, arch: amd64 }
-          - { os: ubuntu, distro: resolute, arch: arm64 }
-          - { os: debian, distro: bullseye, arch: amd64 }
-          - { os: debian, distro: bullseye, arch: arm64 }
-          - { os: debian, distro: bookworm, arch: amd64 }
-          - { os: debian, distro: bookworm, arch: arm64 }
-          - { os: debian, distro: trixie,   arch: amd64 }
-          - { os: debian, distro: trixie,   arch: arm64 }
+          - { os: ubuntu, distro: focal,    arch: amd64, runs-on: [ self-hosted, x64  ] }
+          - { os: ubuntu, distro: focal,    arch: arm64, runs-on: [ self-hosted, ARM64] }
+          - { os: ubuntu, distro: jammy,    arch: amd64, runs-on: [ self-hosted, x64  ] }
+          - { os: ubuntu, distro: jammy,    arch: arm64, runs-on: [ self-hosted, ARM64] }
+          - { os: ubuntu, distro: noble,    arch: amd64, runs-on: [ self-hosted, x64  ] }
+          - { os: ubuntu, distro: noble,    arch: arm64, runs-on: [ self-hosted, ARM64] }
+          - { os: ubuntu, distro: questing, arch: amd64, runs-on: [ self-hosted, x64  ] }
+          - { os: ubuntu, distro: questing, arch: arm64, runs-on: [ self-hosted, ARM64] }
+          - { os: ubuntu, distro: resolute, arch: amd64, runs-on: [ self-hosted, x64  ] }
+          - { os: ubuntu, distro: resolute, arch: arm64, runs-on: [ self-hosted, ARM64] }
+          - { os: debian, distro: bullseye, arch: amd64, runs-on: [ self-hosted, x64  ] }
+          - { os: debian, distro: bullseye, arch: arm64, runs-on: [ self-hosted, ARM64] }
+          - { os: debian, distro: bookworm, arch: amd64, runs-on: [ self-hosted, x64  ] }
+          - { os: debian, distro: bookworm, arch: arm64, runs-on: [ self-hosted, ARM64] }
+          - { os: debian, distro: trixie,   arch: amd64, runs-on: [ self-hosted, x64  ] }
+          - { os: debian, distro: trixie,   arch: arm64, runs-on: [ self-hosted, ARM64] }
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10   # v6.0.3
       - name: Cache Deb Package
@@ -93,7 +93,7 @@ jobs:
         run: |
           cd scripts/Linux-Deb
           sed -i -e "s|__KATHARA_VERSION__|${{ inputs.version }}|g" Makefile
-          make docker-unsigned_${{ matrix.distro }} OS=${{ matrix.os }} SET_ARCH='--platform linux/${{ matrix.arch }}'
+          make docker-unsigned_${{ matrix.distro }} OS=${{ matrix.os }} # SET_ARCH='--platform linux/${{ matrix.arch }}'
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a   #v7.0.1
         with:
           name: deb-${{ matrix.distro }}-${{ matrix.arch }}
@@ -105,15 +105,15 @@ jobs:
   rpm:
     name: rpm-fc${{ matrix.release }}-${{ matrix.arch }}
     needs: [test]
-    runs-on: self-hosted
+    runs-on: ${{ matrix.runs-on }}
     strategy:
       fail-fast: false
       matrix:
         include:
-          - { release: 43, arch: x86_64,  set_arch: '--platform linux/amd64' }
-          - { release: 43, arch: aarch64, set_arch: '--platform linux/arm64' }
-          - { release: 44, arch: x86_64,  set_arch: '--platform linux/amd64' }
-          - { release: 44, arch: aarch64, set_arch: '--platform linux/arm64' }
+          - { release: 43, arch: x86_64,  set_arch: '--platform linux/amd64', runs-on: [ self-hosted, x64  ] }
+          - { release: 43, arch: aarch64, set_arch: '--platform linux/arm64', runs-on: [ self-hosted, ARM64] }
+          - { release: 44, arch: x86_64,  set_arch: '--platform linux/amd64', runs-on: [ self-hosted, x64  ] }
+          - { release: 44, arch: aarch64, set_arch: '--platform linux/arm64', runs-on: [ self-hosted, ARM64] }
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10   # v6.0.3
       - name: Cache Rpm Package
@@ -129,7 +129,7 @@ jobs:
           cd scripts/Linux-Rpm
           sed -i -e "s|__KATHARA_VERSION__|${{ inputs.version }}|g" Makefile
           # Quote SET_ARCH: it contains a space, and without quotes make parses 'linux/amd64' as a separate goal instead of part of the value.
-          make docker-build_${{ matrix.release }} SET_ARCH='${{ matrix.set_arch }}'
+          make docker-build_${{ matrix.release }} # SET_ARCH='${{ matrix.set_arch }}'
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a   #v7.0.1
         with:
           name: rpm-fc${{ matrix.release }}-${{ matrix.arch }}
@@ -213,7 +213,7 @@ jobs:
     runs-on: ${{ inputs.rpm-signer-runs-on }}
     strategy:
       fail-fast: false
-      max-parallel: 1          # one signing key, one runner
+      max-parallel: 1          # one signing key, one runs-on
       matrix:
         artifact:
           - rpm-fc43-x86_64
@@ -240,7 +240,7 @@ jobs:
             sudo apt-get update -qq && sudo apt-get install -y -qq rpm
           }
 
-          # Everything the signing needs lives under a throwaway HOME, so neither ~/.rpmmacros nor the keyring of a persistent self-hosted runner is touched.
+          # Everything the signing needs lives under a throwaway HOME, so neither ~/.rpmmacros nor the keyring of a persistent self-hosted runs-on is touched.
           export HOME="$RUNNER_TEMP/rpm-signing"
           rm -rf "$HOME"; mkdir -p "$HOME"; chmod 700 "$HOME"
           export GNUPGHOME="$HOME/gnupg"; mkdir -p "$GNUPGHOME"; chmod 700 "$GNUPGHOME"
@@ -356,7 +356,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { arch: x64,   runs-on: self-hosted, set_arch: '--platform linux/amd64' }
+          - { arch: x64, runs-on: [ self-hosted, x64 ] }
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10   # v6.0.3
       - uses: ./.github/actions/setup-python-build
@@ -373,7 +373,7 @@ jobs:
         run: |
           cd ./scripts/Windows/
           sed -i -e "s|__KATHARA_VERSION__|${{ inputs.version }}|g" Makefile
-          make all_${{ matrix.arch }} SET_ARCH='${{ matrix.set_arch }}'
+          make all_${{ matrix.arch }} # SET_ARCH='${{ matrix.set_arch }}'
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a   #v7.0.1
         with:
           name: windows-${{ matrix.arch }}
@@ -385,13 +385,13 @@ jobs:
   macos:
     name: macos-${{ matrix.arch }}
     needs: [test]
-    runs-on: self-hosted
+    runs-on: ${{ matrix.runs-on }}
     strategy:
       fail-fast: false
       matrix:
         include:
-          - { arch: arm64,  make: all_arm64, set_arch: ''             }
-          - { arch: x86_64, make: all_x86  , set_arch: 'arch -x86_64' }
+          - { arch: arm64,  make: all_arm64, set_arch: ''            , runs-on: [ self-hosted, ARM64 ] }
+          - { arch: x86_64, make: all_x86  , set_arch: 'arch -x86_64', runs-on: [ self-hosted, x64   ] }
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10   # v6.0.3
       - name: Cache OSX Package
@@ -414,7 +414,7 @@ jobs:
         run: |
           cd scripts/OSX
           sed -i '' -e "s|__KATHARA_VERSION__|${{ inputs.version }}|g" Makefile
-          make ${{ matrix.make }} SET_ARCH='${{ matrix.set_arch }}'
+          make ${{ matrix.make }} # SET_ARCH='${{ matrix.set_arch }}'
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a   #v7.0.1
         with:
           name: macos-${{ matrix.arch }}
