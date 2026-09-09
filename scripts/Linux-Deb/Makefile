@@ -4,11 +4,11 @@ VERSION=__KATHARA_VERSION__
 DEBIAN_PACKAGE_VERSION=1
 OS=ubuntu
 
-.PHONY: docker-build-image prepare-deb-source unpack-deb-source clean-output-folder copy-debian-folder build-man build-deb-unsigned clean venv autocompletion
+.PHONY: docker-build-image prepare-deb-source unpack-deb-source clean-output-folder copy-debian-folder build-man build-deb-unsigned clean venv autocompletion cleanbinary
 
 docker-unsigned_%: clean prepare-deb-source docker-build-image_%
 	docker run --rm -v `pwd`/../../:/opt/kathara $(SET_ARCH) kathara/linux-build-deb:$* /bin/bash -c \
-	 	"make build-deb-unsigned distro=$* && chown -R $(shell id -u):$(shell id -g) Output"
+	 	"make build-deb-unsigned distro=$* && chown -R $(shell id -u):$(shell id -g) Output && make cleanbinary"
 
 docker-build-image_%:
 	cd Docker-Linux-Build && cp Dockerfile_template Dockerfile
@@ -61,4 +61,13 @@ build-deb-unsigned: venv build-man autocompletion
 clean:
 	if [ -d Output ]; then \
 		rm -rf Output; \
+	fi
+
+cleanbinary:
+	cd /opt/kathara/src && find . | grep -E "(__pycache__|\.pyc|\.pyo)$$" | xargs rm -rf
+	if [ -e /opt/kathara/src/kathara.spec ]; then \
+		rm /opt/kathara/src/kathara.spec; \
+	fi
+	if [ -d /opt/kathara/src/kathara.build ]; then \
+		rm -r /opt/kathara/src/kathara.build; \
 	fi

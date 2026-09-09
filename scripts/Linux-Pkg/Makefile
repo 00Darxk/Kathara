@@ -58,4 +58,4 @@ build-remote: prepare-files
 clean:
 	if [ -d Output ]; then \
 		rm -rf Output; \
-	fi
+	fi	

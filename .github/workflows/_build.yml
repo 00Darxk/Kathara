@@ -93,7 +93,7 @@ jobs:
         run: |
           cd scripts/Linux-Deb
           sed -i -e "s|__KATHARA_VERSION__|${{ inputs.version }}|g" Makefile
-          make docker-unsigned_${{ matrix.distro }} OS=${{ matrix.os }} # SET_ARCH='--platform linux/${{ matrix.arch }}'
+          make docker-unsigned_${{ matrix.distro }} OS=${{ matrix.os }}
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a   #v7.0.1
         with:
           name: deb-${{ matrix.distro }}-${{ matrix.arch }}
@@ -110,10 +110,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { release: 43, arch: x86_64,  set_arch: '--platform linux/amd64', runs-on: [ self-hosted, x64  ] }
-          - { release: 43, arch: aarch64, set_arch: '--platform linux/arm64', runs-on: [ self-hosted, ARM64] }
-          - { release: 44, arch: x86_64,  set_arch: '--platform linux/amd64', runs-on: [ self-hosted, x64  ] }
-          - { release: 44, arch: aarch64, set_arch: '--platform linux/arm64', runs-on: [ self-hosted, ARM64] }
+          - { release: 43, arch: x86_64,  runs-on: [ self-hosted, x64  ] }
+          - { release: 43, arch: aarch64, runs-on: [ self-hosted, ARM64] }
+          - { release: 44, arch: x86_64,  runs-on: [ self-hosted, x64  ] }
+          - { release: 44, arch: aarch64, runs-on: [ self-hosted, ARM64] }
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10   # v6.0.3
       - name: Cache Rpm Package
@@ -128,8 +128,7 @@ jobs:
         run: |
           cd scripts/Linux-Rpm
           sed -i -e "s|__KATHARA_VERSION__|${{ inputs.version }}|g" Makefile
-          # Quote SET_ARCH: it contains a space, and without quotes make parses 'linux/amd64' as a separate goal instead of part of the value.
-          make docker-build_${{ matrix.release }} # SET_ARCH='${{ matrix.set_arch }}'
+          make docker-build_${{ matrix.release }}
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a   #v7.0.1
         with:
           name: rpm-fc${{ matrix.release }}-${{ matrix.arch }}
