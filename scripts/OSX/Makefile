@@ -3,7 +3,7 @@
 PRODUCT=Kathara
 VERSION=__KATHARA_VERSION__
 TARGET_DIRECTORY=Output
-APPLE_DEVELOPER_CERTIFICATE_ID=FakeID
+APPLE_DEVELOPER_CERTIFICATE_ID?=FakeID
 ROFF_DIR=../../docs/Roff
 VENV_DIR:=${CURDIR}/venv
 
@@ -87,7 +87,7 @@ createInstaller_%: copyBuildDirectory_%
 
 
 signProduct_%:
-	productsign --sign "Developer ID Installer: $(APPLE_DEVELOPER_CERTIFICATE_ID)" $(TARGET_DIRECTORY)/$(PRODUCT)-macos-installer-$*-$(VERSION).pkg \
+	@productsign --sign "Developer ID Installer: $(APPLE_DEVELOPER_CERTIFICATE_ID)" $(TARGET_DIRECTORY)/$(PRODUCT)-macos-installer-$*-$(VERSION).pkg \
 	$(TARGET_DIRECTORY)/$(PRODUCT)-macos-installer-$*-$(VERSION)-signed.pkg
 
 	pkgutil --check-signature $(TARGET_DIRECTORY)/$(PRODUCT)-macos-installer-$*-$(VERSION)-signed.pkg

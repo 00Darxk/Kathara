@@ -1,7 +1,9 @@
 name: build-matrix
 
 # Reusable "build engine"
-
+#
+# Required configuration (in Actions Settings):
+#   Secret: APPLE_DEVELOPER_CERTIFICATE_ID
 on:
   workflow_call:
     inputs:
@@ -325,6 +327,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
+        #   - { arch: arm64,  make: allSigned_arm64, set_arch: ''             }
+        #   - { arch: x86_64, make: allSigned_x86  , set_arch: 'arch -x86_64' }
           - { arch: arm64,  make: all_arm64, set_arch: ''             }
           - { arch: x86_64, make: all_x86  , set_arch: 'arch -x86_64' }
     steps:
@@ -345,6 +349,8 @@ jobs:
       #     bundler-cache: true
       - name: Build macOS installer
         if: steps.cache-osx.outputs.cache-hit != 'true'
+        env:
+          APPLE_DEVELOPER_CERTIFICATE_ID: ${{ secrets.APPLE_DEVELOPER_CERTIFICATE_ID }}
         shell: bash
         run: |
           cd scripts/OSX
