@@ -190,10 +190,7 @@ jobs:
           AUR_EMAIL: ${{ vars.AUR_EMAIL || 'contact@kathara.org' }}
         run: |
           cd scripts/Linux-Pkg
-          sed -i -e "s|__KATHARA_VERSION__|$VERSION|g" Makefile
-          sed -i -e "s|__AUR_NAME__|$AUR_NAME|g" Makefile
-          sed -i -e "s|__AUR_EMAIL__|$AUR_EMAIL|g" Makefile
-          make allRemote AUR_KEY="${{ secrets.AUR_SSH_KEY }}"
+          make allRemote AUR_KEY="${{ secrets.AUR_SSH_KEY }}" AUR_NAME="$AUR_NAME" AUR_EMAIL="$AUR_EMAIL"
 
           {
             echo "### AUR publish triggered"

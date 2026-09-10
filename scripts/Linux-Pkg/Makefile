@@ -1,6 +1,6 @@
 #!/usr/bin/make -f
 
-VERSION=__KATHARA_VERSION__
+VERSION?=__KATHARA_VERSION__
 PACKAGE_VERSION=1
 AUR_NAME=__AUR_NAME__
 AUR_MAIL=__AUR_EMAIL__
@@ -13,7 +13,9 @@ allRemote: clean docker-build-image docker-build-remote
 
 docker-build-local: docker-build-image
 	mkdir -p Output
-	docker run -v `pwd`:/home/builduser/kathara:ro -v `pwd`/Output:/home/builduser/output -v `pwd`/../..:/home/builduser/kathara-source/Kathara-$(VERSION):ro  kathara/linux-build-pkg /usr/bin/su -c \
+	docker run -v `pwd`:/home/builduser/kathara:ro -v `pwd`/Output:/home/builduser/output \
+			   -v `pwd`/../..:/home/builduser/kathara-source/Kathara-$(VERSION):ro  \
+			   -e VERSION="$(VERSION)" kathara/linux-build-pkg /usr/bin/su -c \
 		"chown builduser:builduser /home/builduser/output && \
 		su -c 'make -f /home/builduser/kathara/Makefile build-local' builduser && \
 		chown -R $(shell id -u):$(shell id -g) /home/builduser/output"

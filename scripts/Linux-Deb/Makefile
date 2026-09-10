@@ -1,6 +1,6 @@
 #!/usr/bin/make -f
 
-VERSION=__KATHARA_VERSION__
+VERSION?=__KATHARA_VERSION__
 DEBIAN_PACKAGE_VERSION=1
 OS=ubuntu
 
@@ -8,7 +8,7 @@ OS=ubuntu
 
 
 docker-unsigned_%: clean docker-build-image_%
-	docker run --rm -v `pwd`/../../:/opt/kathara $(SET_ARCH) kathara/linux-build-deb:$* /bin/bash -c \
+	docker run --rm -v `pwd`/../../:/opt/kathara -e VERSION="$(VERSION)" $(SET_ARCH) kathara/linux-build-deb:$* /bin/bash -c \
 		"cp -a /opt/kathara /tmp/kathara && \
 		 cd /tmp/kathara/scripts/Linux-Deb && \
 		 make prepare-deb-source build-deb-unsigned distro=$* && \
