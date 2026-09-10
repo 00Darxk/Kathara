@@ -11,16 +11,16 @@ default: all_x64
 
 docker-build-installer_%: docker-build-executable prepare-executable_%
 	chmod -R a+w Output && umask a+w
-	docker run --rm -v `pwd`/Output:/work $(SET_ARCH) amake/innosetup installer.iss
+	docker run --rm -v `pwd`/Output:/work amake/innosetup installer.iss
 	sudo chown -R $(shell id -u):$(shell id -g) Output
 
 docker-build-executable: docker-build-image-pyinstaller prepare-source
-	docker run --rm -v `pwd`/Output/src/:/src/ $(SET_ARCH) kathara/windows-pyinstaller
+	docker run --rm -v `pwd`/Output/src/:/src/ kathara/windows-pyinstaller
 	sudo chown -R $(shell id -u):$(shell id -g) Output
 
 docker-build-image-pyinstaller:
 	cd Docker-Windows-Build && cp Dockerfile_pyinstaller Dockerfile
-	cd Docker-Windows-Build && docker build $(SET_ARCH) -t kathara/windows-pyinstaller .
+	cd Docker-Windows-Build && docker build -t kathara/windows-pyinstaller .
 	cd Docker-Windows-Build && rm Dockerfile
 
 prepare-source:
@@ -37,7 +37,7 @@ prepare-executable_%:
 	cp ../../LICENSE Output
 	cd Output && sed -r -i 's|__VERSION__|$(VERSION)|g' installer.iss
 	cd Output && sed -r -i 's|..\\..\\..\\src\\(kathara.dist)|\1|g' installer.iss
-	cd Output && sed -r -i 's|^;(.*)"__ARCH__"$$|\1"$*"|g' installer.iss
+	cd Output && sed -r -i 's|^;(.*)"__ARCH__"$$|\1"$*compatible"|g' installer.iss
 
 clean-assets:
 	rm -rf Output/Assets

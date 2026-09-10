@@ -35,6 +35,7 @@ Compression=lzma
 SolidCompression=yes
 WizardStyle=modern
 ChangesEnvironment=True
+ArchitecturesAllowed={#MyArchitecture}
 ArchitecturesInstallIn64BitMode={#MyArchitecture}
 UninstallDisplayIcon={app}\Kathara.exe
 
