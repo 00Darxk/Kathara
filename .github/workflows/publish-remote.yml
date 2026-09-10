@@ -188,12 +188,12 @@ jobs:
           persist-credentials: false
       - name: Push on AUR
         env:
-          VERSION:   ${{ needs.version.outputs.version }}
+          VERSION: ${{ needs.version.outputs.version }}
           AUR_NAME:  ${{ vars.AUR_NAME || 'user' }}
           AUR_EMAIL: ${{ vars.AUR_EMAIL || 'contact@kathara.org' }}
         run: |
           cd scripts/Linux-Pkg
-          make allRemote AUR_KEY="${{ secrets.AUR_SSH_KEY }}" AUR_NAME="$AUR_NAME" AUR_EMAIL="$AUR_EMAIL"
+          make allRemote AUR_KEY="${{ secrets.AUR_SSH_KEY || 'you_are_not_supposed_to_see_me' }}"
 
           {
             echo "### AUR publish triggered"
@@ -224,7 +224,7 @@ jobs:
         env:
           TWINE_USERNAME: '__token__'
           TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
-          VERSION:   ${{ needs.version.outputs.version }}
+          VERSION: ${{ needs.version.outputs.version }}
         run: |
           cd scripts/pip-package && make upload
 

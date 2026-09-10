@@ -2,8 +2,8 @@
 
 VERSION?=__KATHARA_VERSION__
 PACKAGE_VERSION=1
-AUR_NAME=__AUR_NAME__
-AUR_MAIL=__AUR_EMAIL__
+AUR_NAME?=user
+AUR_MAIL?=contact@kathara.org
 
 .PHONY: all allRemote clean docker-build-image docker-build-local docker-build-remote build-local build-remote
 
@@ -21,7 +21,7 @@ docker-build-local: docker-build-image
 		chown -R $(shell id -u):$(shell id -g) /home/builduser/output"
 
 docker-build-remote: docker-build-image
-	docker run --rm -v `pwd`:/home/builduser/kathara:ro kathara/linux-build-pkg /usr/bin/su -c \
+	docker run --rm -v `pwd`:/home/builduser/kathara:ro -e VERSION="$(VERSION)" kathara/linux-build-pkg /usr/bin/su -c \
 		"make -f /home/builduser/kathara/Makefile build-remote AUR_KEY=$(AUR_KEY)" builduser
 
 docker-build-image:
