@@ -21,8 +21,8 @@ docker-build-local: docker-build-image
 		chown -R $(shell id -u):$(shell id -g) /home/builduser/output"
 
 docker-build-remote: docker-build-image
-	docker run --rm -v `pwd`:/home/builduser/kathara:ro -e VERSION="$(VERSION)" kathara/linux-build-pkg /usr/bin/su -c \
-		"make -f /home/builduser/kathara/Makefile build-remote AUR_KEY=$(AUR_KEY)" builduser
+	docker run --rm -v `pwd`:/home/builduser/kathara:ro -e VERSION="$(VERSION)" -e AUR_KEY="$(AUR_KEY)" kathara/linux-build-pkg /usr/bin/su -c \
+		"make -f /home/builduser/kathara/Makefile build-remote" builduser
 
 docker-build-image:
 	cd Docker-Linux-Build && docker build -t kathara/linux-build-pkg .
@@ -44,8 +44,8 @@ build-local: prepare-files
 
 build-remote: prepare-files
 	sed -i -e 's/__SOURCE__/"https:\/\/github.com\/KatharaFramework\/Kathara\/archive\/refs\/tags\/\$$\pkgver.tar.gz"/g' /home/builduser/build/PKGBUILD
-	# cp -r /home/builduser/ssh/ /home/builduser/.ssh/ && chmod 600 /home/builduser/.ssh/id_rsa
-	echo "$(AUR_KEY)" > /home/builduser/.ssh/id_rsa
+	mkdir -p /home/builduser/.ssh
+	printf '%s\n' "$$AUR_KEY" > /home/builduser/.ssh/id_rsa && chmod 600 /home/builduser/.ssh/id_rsa
 	ssh-keyscan aur.archlinux.org > /home/builduser/.ssh/known_hosts
 	cd .. && git clone ssh://aur@aur.archlinux.org/kathara kathara-aur
 	cd ../kathara-aur && git checkout master
