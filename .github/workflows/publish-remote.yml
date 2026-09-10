@@ -163,7 +163,10 @@ jobs:
             esac
             exit 1
           fi
-
+        
+          if [ -z "$(which jq)" ]; then
+            sudo apt-get install -y jq
+          fi
           url="$(jq -r '.web_url // empty' "$body")"
           echo "Pipeline created: ${url:-<no web_url in response>}"
           {
@@ -175,7 +178,7 @@ jobs:
 
   publish-aur:
     name: Publish Package to AUR
-    runs-on: self-hosted
+    runs-on: [self-hosted, x64]
     needs: [gate, version]
     if: needs.gate.outputs.proceed == 'true'
     steps:
@@ -201,7 +204,7 @@ jobs:
 
   publish-pypi:
     name: Publish Package to Pypi
-    runs-on: self-hosted
+    runs-on: [self-hosted, ARM64]
     needs: [gate, version]
     if: needs.gate.outputs.proceed == 'true'
     steps:
