@@ -6,11 +6,7 @@ OS=ubuntu
 
 .PHONY: docker-build-image prepare-deb-source unpack-deb-source clean-output-folder copy-debian-folder build-man build-deb-unsigned clean venv autocompletion
 
-# dh_fixperms chowns the staging tree to 0:0, which only works on a real Linux filesystem.
-# A bind mount from macOS (colima virtiofs/sshfs) is served by the host user and rejects it,
-# so the whole build happens on a copy inside the container and only the resulting .deb
-# files are written back to the mounted Output directory. Same shape as Linux-Rpm, which
-# builds under ~/rpmbuild and copies the packages out at the end.
+
 docker-unsigned_%: clean docker-build-image_%
 	docker run --rm -v `pwd`/../../:/opt/kathara $(SET_ARCH) kathara/linux-build-deb:$* /bin/bash -c \
 		"cp -a /opt/kathara /tmp/kathara && \
