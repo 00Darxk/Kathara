@@ -4,11 +4,21 @@ VERSION=__KATHARA_VERSION__
 DEBIAN_PACKAGE_VERSION=1
 OS=ubuntu
 
-.PHONY: docker-build-image prepare-deb-source unpack-deb-source clean-output-folder copy-debian-folder build-man build-deb-unsigned clean venv autocompletion cleanbinary
+.PHONY: docker-build-image prepare-deb-source unpack-deb-source clean-output-folder copy-debian-folder build-man build-deb-unsigned clean venv autocompletion
 
-docker-unsigned_%: clean prepare-deb-source docker-build-image_%
+# dh_fixperms chowns the staging tree to 0:0, which only works on a real Linux filesystem.
+# A bind mount from macOS (colima virtiofs/sshfs) is served by the host user and rejects it,
+# so the whole build happens on a copy inside the container and only the resulting .deb
+# files are written back to the mounted Output directory. Same shape as Linux-Rpm, which
+# builds under ~/rpmbuild and copies the packages out at the end.
+docker-unsigned_%: clean docker-build-image_%
 	docker run --rm -v `pwd`/../../:/opt/kathara $(SET_ARCH) kathara/linux-build-deb:$* /bin/bash -c \
-	 	"make build-deb-unsigned distro=$* && make cleanbinary && chown -R $(shell id -u):$(shell id -g) Output"
+		"cp -a /opt/kathara /tmp/kathara && \
+		 cd /tmp/kathara/scripts/Linux-Deb && \
+		 make prepare-deb-source build-deb-unsigned distro=$* && \
+		 mkdir -p /opt/kathara/scripts/Linux-Deb/Output && \
+		 cp Output/*.deb /opt/kathara/scripts/Linux-Deb/Output/ && \
+		 { chown -R $(shell id -u):$(shell id -g) /opt/kathara/scripts/Linux-Deb/Output || true; }"
 
 docker-build-image_%:
 	cd Docker-Linux-Build && cp Dockerfile_template Dockerfile
@@ -69,13 +79,4 @@ build-deb-unsigned: venv build-man autocompletion
 clean:
 	if [ -d Output ]; then \
 		rm -rf Output; \
-	fi
-
-cleanbinary:
-	cd /opt/kathara/src && find . | grep -E "(__pycache__|\.pyc|\.pyo)$$" | xargs rm -rf
-	if [ -e /opt/kathara/src/kathara.spec ]; then \
-		rm /opt/kathara/src/kathara.spec; \
-	fi
-	if [ -d /opt/kathara/src/kathara.build ]; then \
-		rm -r /opt/kathara/src/kathara.build; \
 	fi
