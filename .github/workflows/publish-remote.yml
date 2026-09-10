@@ -215,10 +215,10 @@ jobs:
 
       - name: Setup config
         run: |
-          sed -i -e "s|^version = \".*\"|version = \"${{ inputs.version }}\"|" pyproject.toml
-          sed -i -e "s|^version = .*|version = ${{ inputs.version }}|" setup.cfg
-          sed -i -e "s|version='[^']*'|version='${{ inputs.version }}'|" setup.py
-          sed -i -e "s#refs/tags/[^']*\.tar\.gz#refs/tags/${{ inputs.version }}.tar.gz#" setup.py
+          sed -i -e "s|^version = \".*\"|version = \"${{ needs.version.outputs.version }}\"|" pyproject.toml
+          sed -i -e "s|^version = .*|version = ${{ needs.version.outputs.version }}|" setup.cfg
+          sed -i -e "s|version='[^']*'|version='${{ needs.version.outputs.version }}'|" setup.py
+          sed -i -e "s#refs/tags/[^']*\.tar\.gz#refs/tags/${{ needs.version.outputs.version }}.tar.gz#" setup.py
 
       - name: Push to Pypi
         env:
