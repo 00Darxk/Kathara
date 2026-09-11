@@ -18,7 +18,16 @@ docker-unsigned_%: clean docker-build-image_%
 
 docker-build-image_%:
 	cd Docker-Linux-Build && cp Dockerfile_template Dockerfile
-	cd Docker-Linux-Build && sed -i -e "s|__DISTRO__|$*|g" Dockerfile
+	cd Docker-Linux-Build && sed -i -e "1s|__DISTRO__|$*|g" Dockerfile
+	if [ $* = "bookworm" ] ; then \
+		cd Docker-Linux-Build && sed -i -e "s|__DISTRO__|jammy|g" Dockerfile; \
+	elif [ $* = "trixie" ] ; then \
+		cd Docker-Linux-Build && sed -i -e "s|__DISTRO__|noble|g" Dockerfile; \
+	elif [ $* = "forky" ] ; then \
+		cd Docker-Linux-Build && sed -i -e "s|__DISTRO__|resolute|g" Dockerfile; \
+	else \
+		cd Docker-Linux-Build && sed -i -e "s|__DISTRO__|$*|g" Dockerfile; \
+	fi
 	cd Docker-Linux-Build && sed -i -e "s|__OS__|$(OS)|g" Dockerfile
 	cd Docker-Linux-Build && docker build $(SET_ARCH) -t kathara/linux-build-deb:$* .
 	cd Docker-Linux-Build && rm Dockerfile

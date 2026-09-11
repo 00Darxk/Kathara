@@ -152,7 +152,7 @@ jobs:
       - name: Generate SHA256SUMS
         working-directory: artifacts
         run: |
-          set -euo pipefail
+          set -euox pipefail
 
           # Every file at any depth, excluding a SHA256SUMS from a previous run so the checksum file never tries to hash itself.
           mapfile -t assets < <(find . -type f ! -name 'SHA256SUMS' | sort)
