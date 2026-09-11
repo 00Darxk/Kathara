@@ -106,7 +106,7 @@ jobs:
     name: Draft release ${{ needs.version.outputs.version }}
     needs: [version, build]
     if: needs.version.outputs.should_release == 'true'
-    runs-on: self-hosted
+    runs-on: [self-hosted, x64]
     permissions:
       contents: write       # create the release (and the tag on publish)
       pull-requests: read   # let the changelog builder read merged PRs
