@@ -21,7 +21,7 @@ docker-build-local: docker-build-image
 		chown -R $(shell id -u):$(shell id -g) /home/builduser/output"
 
 docker-build-remote: docker-build-image
-	docker run --rm -v `pwd`:/home/builduser/kathara:ro -e VERSION="$(VERSION)" -e AUR_KEY="$(AUR_KEY)" kathara/linux-build-pkg /usr/bin/su -c \
+	@docker run --rm -v `pwd`:/home/builduser/kathara:ro -e VERSION="$(VERSION)" -e AUR_KEY="$(AUR_KEY)" kathara/linux-build-pkg /usr/bin/su -c \
 		"make -f /home/builduser/kathara/Makefile build-remote" builduser
 
 docker-build-image:
