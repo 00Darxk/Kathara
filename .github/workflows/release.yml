@@ -22,7 +22,7 @@ jobs:
 
   version:
     name: Resolve & gate version
-    runs-on: self-hosted
+    runs-on: [self-hosted, x64]
     permissions:
       contents: read
     outputs:
