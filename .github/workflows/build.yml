@@ -55,10 +55,7 @@ jobs:
           - { os: linux, runs-on: [ self-hosted, linux ] }
           - { os: macOS, runs-on: [ self-hosted, macOS ] }
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10   # v6.0.3
-      # - uses: ./.github/actions/setup-python-build
-      #   with:
-      #     python-version: '3.14'
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1   # v7.0.1
 
       - name: Run PyTest
         shell: bash
@@ -92,13 +89,13 @@ jobs:
           - { os: debian, distro: forky,    arch: amd64, runs-on: [ self-hosted, x64  ] }
           - { os: debian, distro: forky,    arch: arm64, runs-on: [ self-hosted, ARM64] }
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10   # v6.0.3
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1   # v7.0.1
       - name: Cache Deb Package
-        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae   # v5.0.5
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9   # v6.1.0
         id: cache-deb
         with:
           path: scripts/Linux-Deb/Output
-          key: deb-${{ matrix.distro }}-${{ matrix.arch }}-${{ inputs.version }}-${{ hashFiles('src/**', 'scripts/Linux-Deb/**', '!scripts/Linux-Deb/Output/**') }}
+          key: deb-${{ matrix.distro }}-${{ matrix.arch }}-${{ inputs.version }}-${{ hashFiles('src/**', 'CHANGELOG.md', 'scripts/Linux-Deb/**', '!scripts/Linux-Deb/Output/**') }}
       - name: Build Deb Package
         if: steps.cache-deb.outputs.cache-hit != 'true'
         shell: bash
@@ -128,13 +125,13 @@ jobs:
           - { release: 45, arch: x86_64,  runs-on: [ self-hosted, x64  ] }
           - { release: 45, arch: aarch64, runs-on: [ self-hosted, ARM64] }
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10   # v6.0.3
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1   # v7.0.1
       - name: Cache Rpm Package
-        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae   # v5.0.5
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9   # v6.1.0
         id: cache-rpm
         with:
           path: scripts/Linux-Rpm/Output
-          key: rpm-fc${{ matrix.release }}-${{ matrix.arch }}-${{ inputs.version }}-${{ hashFiles('src/**', 'scripts/Linux-Rpm/**', '!scripts/Linux-Rpm/Output/**') }}
+          key: rpm-fc${{ matrix.release }}-${{ matrix.arch }}-${{ inputs.version }}-${{ hashFiles('src/**', 'CHANGELOG.md', 'scripts/Linux-Rpm/**', '!scripts/Linux-Rpm/Output/**') }}
       - name: Build Rpm Package
         if: steps.cache-rpm.outputs.cache-hit != 'true'
         shell: bash
@@ -179,8 +176,8 @@ jobs:
           - rpm-fc45-x86_64
           - rpm-fc45-aarch64
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10   # v6.0.3
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c   # v8.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1   # v7.0.1
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333   # v8.0.2
         with:
           name: ${{ matrix.artifact }}
           path: rpms
@@ -210,13 +207,13 @@ jobs:
     needs: [test]
     runs-on: [self-hosted, x64]
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10   # v6.0.3
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1   # v7.0.1
       - name: Cache Pkg Package
-        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae   # v5.0.5
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9   # v6.1.0
         id: cache-pkg
         with:
           path: scripts/Linux-Pkg/Output
-          key: pkg-${{ inputs.version }}-${{ hashFiles('src/**', 'scripts/Linux-Pkg/**', '!scripts/Linux-Pkg/Output/**') }}
+          key: pkg-${{ inputs.version }}-${{ hashFiles('src/**', 'CHANGELOG.md', 'scripts/Linux-Pkg/**', '!scripts/Linux-Pkg/Output/**') }}
       - name: Build Pkg Package
         if: steps.cache-pkg.outputs.cache-hit != 'true'
         shell: bash
@@ -241,7 +238,7 @@ jobs:
         include:
           - { arch: x64, runs-on: [ self-hosted, x64 ] }
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10   # v6.0.3
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1   # v7.0.1
       - name: Cache Windows Installer
         id: cache-win
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae    #v5.0.5
@@ -272,9 +269,9 @@ jobs:
           - { arch: arm64,  target: arm64, set_arch: ''             }
           - { arch: x86_64, target: x86  , set_arch: 'arch -x86_64' }
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10   # v6.0.3
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1   # v7.0.1
       - name: Cache OSX Package
-        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae   # v5.0.5
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9   # v6.1.0
         id: cache-osx
         with:
           path: scripts/OSX/Output
