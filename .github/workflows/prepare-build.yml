@@ -9,6 +9,7 @@ on:
       - 'src/**'
       - 'scripts/**'
       - 'docs/**'
+      - 'CHANGELOG.md'
 
 concurrency:
   group: build-${{ github.workflow }}-${{ github.ref }}

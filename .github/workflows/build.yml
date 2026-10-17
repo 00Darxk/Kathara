@@ -98,7 +98,7 @@ jobs:
         id: cache-deb
         with:
           path: scripts/Linux-Deb/Output
-          key: deb-${{ matrix.distro }}-${{ matrix.arch }}-${{ inputs.version }}-${{ hashFiles('src/**', 'scripts/Linux-Deb/**', '!scripts/Linux-Deb/Output/**') }}
+          key: deb-${{ matrix.distro }}-${{ matrix.arch }}-${{ inputs.version }}-${{ hashFiles('src/**', 'CHANGELOG.md', 'scripts/Linux-Deb/**', '!scripts/Linux-Deb/Output/**') }}
       - name: Build Deb Package
         if: steps.cache-deb.outputs.cache-hit != 'true'
         shell: bash
@@ -134,7 +134,7 @@ jobs:
         id: cache-rpm
         with:
           path: scripts/Linux-Rpm/Output
-          key: rpm-fc${{ matrix.release }}-${{ matrix.arch }}-${{ inputs.version }}-${{ hashFiles('src/**', 'scripts/Linux-Rpm/**', '!scripts/Linux-Rpm/Output/**') }}
+          key: rpm-fc${{ matrix.release }}-${{ matrix.arch }}-${{ inputs.version }}-${{ hashFiles('src/**', 'CHANGELOG.md', 'scripts/Linux-Rpm/**', '!scripts/Linux-Rpm/Output/**') }}
       - name: Build Rpm Package
         if: steps.cache-rpm.outputs.cache-hit != 'true'
         shell: bash
@@ -216,7 +216,7 @@ jobs:
         id: cache-pkg
         with:
           path: scripts/Linux-Pkg/Output
-          key: pkg-${{ inputs.version }}-${{ hashFiles('src/**', 'scripts/Linux-Pkg/**', '!scripts/Linux-Pkg/Output/**') }}
+          key: pkg-${{ inputs.version }}-${{ hashFiles('src/**', 'CHANGELOG.md', 'scripts/Linux-Pkg/**', '!scripts/Linux-Pkg/Output/**') }}
       - name: Build Pkg Package
         if: steps.cache-pkg.outputs.cache-hit != 'true'
         shell: bash

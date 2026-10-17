@@ -9,7 +9,7 @@ DEFAULT_RELEASE?=43
 # Directory searched (recursively) for .rpm files by `make sign`.
 RPM_DIR?=Output
 
-.PHONY: all clean prepare-source prepare-man-pages prepare-bash-completion pack-source build sign cleanbinary
+.PHONY: all changelog clean prepare-source prepare-man-pages prepare-bash-completion pack-source build sign cleanbinary
 
 all: docker-build_$(DEFAULT_RELEASE)
 
@@ -25,9 +25,16 @@ docker-build-image_%:
 	cd Docker-Linux-Build && sed -e "s|__RELEASE__|$*|g" Dockerfile_template \
 		| docker build $(SET_ARCH) -t kathara/linux-build-rpm:$* -f - .
 
+changelog:
+	@{ grep -q '^## \[$(VERSION)\]' ../../CHANGELOG.md || printf '## [$(VERSION)] - %s\n- Development build\n' "$$(date -u +%F)"; cat ../../CHANGELOG.md; } \
+	| LC_ALL=C awk ' \
+		/^## \[[0-9]/ { if (n++) print ""; cmd = "date -u +\"%a %b %d %Y\" -d " $$4; cmd | getline when; close(cmd); \
+			print "* " when " Kathara Team <contact@kathara.org> - " substr($$2, 2, length($$2) - 2) "-$(PACKAGE_VERSION)"; next } \
+		/^- / && n { gsub(/%/, "%%"); print }'
+
 prepare-source:
 	cp rpm/kathara.spec ~/rpmbuild/SPECS
-	sed -i -e "s|__DATE__|$$(date +'%a %b %d %Y')|g" ~/rpmbuild/SPECS/kathara.spec
+	$(MAKE) -s --no-print-directory changelog >> ~/rpmbuild/SPECS/kathara.spec
 	sed -i -e 's/__VERSION__/$(VERSION)/g' ~/rpmbuild/SPECS/kathara.spec
 	sed -i -e 's/__PACKAGE_VERSION__/$(PACKAGE_VERSION)/g' ~/rpmbuild/SPECS/kathara.spec
 	mkdir -p ~/rpmbuild/SOURCES/kathara-$(VERSION)/src

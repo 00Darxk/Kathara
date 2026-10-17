@@ -4,8 +4,9 @@ VERSION?=__KATHARA_VERSION__
 PACKAGE_VERSION=1
 AUR_NAME?=user
 AUR_MAIL?=contact@kathara.org
+CHANGELOG_MD?=../../CHANGELOG.md
 
-.PHONY: all allRemote clean docker-build-image docker-build-local docker-build-remote build-local build-remote
+.PHONY: all allRemote changelog clean docker-build-image docker-build-local docker-build-remote build-local build-remote
 
 all: clean docker-build-image docker-build-local
 
@@ -14,6 +15,7 @@ allRemote: clean docker-build-image docker-build-remote
 docker-build-local: docker-build-image
 	mkdir -p Output
 	docker run -v `pwd`:/home/builduser/kathara:ro -v `pwd`/Output:/home/builduser/output \
+			   -v `pwd`/../../CHANGELOG.md:/home/builduser/CHANGELOG.md:ro \
 			   -v `pwd`/../..:/home/builduser/kathara-source/Kathara-$(VERSION):ro  \
 			   -e VERSION="$(VERSION)" kathara/linux-build-pkg /usr/bin/su -c \
 		"chown builduser:builduser /home/builduser/output && \
@@ -21,16 +23,21 @@ docker-build-local: docker-build-image
 		chown -R $(shell id -u):$(shell id -g) /home/builduser/output"
 
 docker-build-remote: docker-build-image
-	@docker run --rm -v `pwd`:/home/builduser/kathara:ro -e VERSION="$(VERSION)" -e AUR_KEY="$(AUR_KEY)" kathara/linux-build-pkg /usr/bin/su -c \
+	@docker run --rm -v `pwd`:/home/builduser/kathara:ro -v `pwd`/../../CHANGELOG.md:/home/builduser/CHANGELOG.md:ro -e VERSION="$(VERSION)" -e AUR_KEY="$(AUR_KEY)" kathara/linux-build-pkg /usr/bin/su -c \
 		"make -f /home/builduser/kathara/Makefile build-remote" builduser
+
+changelog:
+	@{ grep -q '^## \[$(VERSION)\]' $(CHANGELOG_MD) || printf '## [$(VERSION)] - %s\n- Development build\n' "$$(date -u +%F)"; cat $(CHANGELOG_MD); } \
+	| awk ' \
+		/^## \[[0-9]/ { if (n++) print ""; print $$4 " Kathara Team <contact@kathara.org>\n\n* Release v" substr($$2, 2, length($$2) - 2); next } \
+		/^- / && n { print "    * " substr($$0, 3) }'
 
 docker-build-image:
 	cd Docker-Linux-Build && docker build -t kathara/linux-build-pkg .
 
 prepare-files:
 	cp -r /home/builduser/kathara/pkginfo/* /home/builduser/build
-	sed -i -e "s|__DATE__|$$(date -R)|g" /home/builduser/build/kathara.changelog
-	sed -i -e 's/__VERSION__/$(VERSION)/g' /home/builduser/build/kathara.changelog
+	$(MAKE) -s --no-print-directory -f /home/builduser/kathara/Makefile changelog CHANGELOG_MD=/home/builduser/CHANGELOG.md > /home/builduser/build/kathara.changelog
 	sed -i -e 's/__VERSION__/$(VERSION)/g' /home/builduser/build/PKGBUILD
 	sed -i -e 's/__PACKAGE_VERSION__/$(PACKAGE_VERSION)/g' /home/builduser/build/PKGBUILD
 

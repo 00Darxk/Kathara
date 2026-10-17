@@ -4,7 +4,7 @@ VERSION?=__KATHARA_VERSION__
 DEBIAN_PACKAGE_VERSION=1
 OS?=ubuntu
 
-.PHONY: docker-build-image prepare-deb-source unpack-deb-source clean-output-folder copy-debian-folder build-man build-deb-unsigned clean venv autocompletion
+.PHONY: changelog docker-build-image prepare-deb-source unpack-deb-source clean-output-folder copy-debian-folder build-man build-deb-unsigned clean venv autocompletion
 
 
 docker-unsigned_%: clean docker-build-image_%
@@ -55,10 +55,17 @@ copy-debian-folder:
 		sed -i 's|python3.14-venv (>= 3.14.0)|python3.13-venv (>= 3.13.0)|g' Output/kathara-$(VERSION)/debian/control ; \
 		sed -i 's|python3.14|python3.13|g' Output/kathara-$(VERSION)/debian/rules   ; \
 	fi
-	sed -i -e "s|__DATE__|$$(date -R)|g" Output/kathara-$(VERSION)/debian/changelog
-	sed -i -e 's/__DEBIAN_PACKAGE_VERSION__/$(DEBIAN_PACKAGE_VERSION)/g' Output/kathara-$(VERSION)/debian/changelog
-	sed -i -e 's/__VERSION__/$(VERSION)/g' Output/kathara-$(VERSION)/debian/changelog
-	
+	$(MAKE) -s --no-print-directory changelog > Output/kathara-$(VERSION)/debian/changelog
+
+changelog:
+	@{ grep -q '^## \[$(VERSION)\]' ../../CHANGELOG.md || printf '## [$(VERSION)] - %s\n- Development build\n' "$$(date -u +%F)"; cat ../../CHANGELOG.md; } \
+	| LC_ALL=C awk -v rev="$(DEBIAN_PACKAGE_VERSION)" -v distro="$(distro)" ' \
+		function sign() { if (n) print "\n -- Kathara Team <contact@kathara.org>  " when "\n" } \
+		/^## \[[0-9]/ { sign(); n++; cmd = "date -u -R -d " $$4; cmd | getline when; close(cmd); \
+			print "kathara (" substr($$2, 2, length($$2) - 2) "-" rev distro ") " distro "; urgency=low\n"; next } \
+		/^- / && n { print "  * " substr($$0, 3) } \
+		END { sign() }'
+
 venv:
 	if [ -z "$$(which python3.14)" ] ; then \
 		python3.13 -m venv /root/py-build-env ; \
@@ -78,7 +85,6 @@ autocompletion:
 	/root/py-build-env/bin/python3 ../autocompletion/generate_autocompletion.py Output/kathara-$(VERSION)/debian/kathara.bash-completion
 
 build-deb-unsigned: venv build-man autocompletion
-	sed -i -e 's/__UBUNTU_VERSION__/$(distro)/g' Output/kathara-$(VERSION)/debian/changelog
 	cd Output/kathara-$(VERSION); debuild -us -uc
 
 clean:
