@@ -19,3 +19,8 @@
     4. Create a `.pkg` package.
     5. Automatically remove the Docker container.
 3. Output file is located in the `Output` directory
+
+# Changelog
+
+To see the package changelog before building, run `make changelog VERSION=x.y.z`.
+If `CHANGELOG.md` has no section for `x.y.z` yet, a "Development build" entry is added on top.
