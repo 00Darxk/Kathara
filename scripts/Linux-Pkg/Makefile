@@ -26,18 +26,23 @@ docker-build-remote: docker-build-image
 	@docker run --rm -v `pwd`:/home/builduser/kathara:ro -v `pwd`/../../CHANGELOG.md:/home/builduser/CHANGELOG.md:ro -e VERSION="$(VERSION)" -e AUR_KEY="$(AUR_KEY)" kathara/linux-build-pkg /usr/bin/su -c \
 		"make -f /home/builduser/kathara/Makefile build-remote" builduser
 
-changelog:
-	@{ grep -q '^## \[$(VERSION)\]' $(CHANGELOG_MD) || printf '## [$(VERSION)] - %s\n- Development build\n' "$$(date -u +%F)"; cat $(CHANGELOG_MD); } \
+CHANGELOG_CMD = test -s $(CHANGELOG_MD) && \
+	{ grep -q '^\#\# \[$(VERSION)\]' $(CHANGELOG_MD) || printf '\#\# [$(VERSION)] - %s\n- Development build\n' "$$(date -u +%F)"; cat $(CHANGELOG_MD); } \
 	| awk ' \
-		/^## \[[0-9]/ { if (n++) print ""; print $$4 " Kathara Team <contact@kathara.org>\n\n* Release v" substr($$2, 2, length($$2) - 2); next } \
+		/^\#\# \[[0-9]/ { if (n++) print ""; print $$4 " Kathara Team <contact@kathara.org>\n\n* Release v" substr($$2, 2, length($$2) - 2); next }; \
 		/^- / && n { print "    * " substr($$0, 3) }'
+
+changelog:
+	@$(CHANGELOG_CMD)
 
 docker-build-image:
 	cd Docker-Linux-Build && docker build -t kathara/linux-build-pkg .
 
+# Runs inside the container, where CHANGELOG.md is mounted at /home/builduser/CHANGELOG.md.
+prepare-files: CHANGELOG_MD=/home/builduser/CHANGELOG.md
 prepare-files:
 	cp -r /home/builduser/kathara/pkginfo/* /home/builduser/build
-	$(MAKE) -s --no-print-directory -f /home/builduser/kathara/Makefile changelog CHANGELOG_MD=/home/builduser/CHANGELOG.md > /home/builduser/build/kathara.changelog
+	$(CHANGELOG_CMD) > /home/builduser/build/kathara.changelog
 	sed -i -e 's/__VERSION__/$(VERSION)/g' /home/builduser/build/PKGBUILD
 	sed -i -e 's/__PACKAGE_VERSION__/$(PACKAGE_VERSION)/g' /home/builduser/build/PKGBUILD
 
