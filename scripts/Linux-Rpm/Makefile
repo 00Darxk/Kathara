@@ -25,16 +25,19 @@ docker-build-image_%:
 	cd Docker-Linux-Build && sed -e "s|__RELEASE__|$*|g" Dockerfile_template \
 		| docker build $(SET_ARCH) -t kathara/linux-build-rpm:$* -f - .
 
-changelog:
-	@{ grep -q '^## \[$(VERSION)\]' ../../CHANGELOG.md || printf '## [$(VERSION)] - %s\n- Development build\n' "$$(date -u +%F)"; cat ../../CHANGELOG.md; } \
+CHANGELOG_CMD = test -s ../../CHANGELOG.md && \
+	{ grep -q '^\#\# \[$(VERSION)\]' ../../CHANGELOG.md || printf '\#\# [$(VERSION)] - %s\n- Development build\n' "$$(date -u +%F)"; cat ../../CHANGELOG.md; } \
 	| LC_ALL=C awk ' \
-		/^## \[[0-9]/ { if (n++) print ""; cmd = "date -u +\"%a %b %d %Y\" -d " $$4; cmd | getline when; close(cmd); \
-			print "* " when " Kathara Team <contact@kathara.org> - " substr($$2, 2, length($$2) - 2) "-$(PACKAGE_VERSION)"; next } \
+		/^\#\# \[[0-9]/ { if (n++) print ""; cmd = "date -u +\"%a %b %d %Y\" -d " $$4; cmd | getline when; close(cmd); \
+			print "* " when " Kathara Team <contact@kathara.org> - " substr($$2, 2, length($$2) - 2) "-$(PACKAGE_VERSION)"; next }; \
 		/^- / && n { gsub(/%/, "%%"); print }'
+
+changelog:
+	@$(CHANGELOG_CMD)
 
 prepare-source:
 	cp rpm/kathara.spec ~/rpmbuild/SPECS
-	$(MAKE) -s --no-print-directory changelog >> ~/rpmbuild/SPECS/kathara.spec
+	$(CHANGELOG_CMD) >> ~/rpmbuild/SPECS/kathara.spec
 	sed -i -e 's/__VERSION__/$(VERSION)/g' ~/rpmbuild/SPECS/kathara.spec
 	sed -i -e 's/__PACKAGE_VERSION__/$(PACKAGE_VERSION)/g' ~/rpmbuild/SPECS/kathara.spec
 	mkdir -p ~/rpmbuild/SOURCES/kathara-$(VERSION)/src

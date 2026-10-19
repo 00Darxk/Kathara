@@ -4,6 +4,15 @@ VERSION?=__KATHARA_VERSION__
 DEBIAN_PACKAGE_VERSION=1
 OS?=ubuntu
 
+CHANGELOG_CMD = test -s ../../CHANGELOG.md && \
+	{ grep -q '^\#\# \[$(VERSION)\]' ../../CHANGELOG.md || printf '\#\# [$(VERSION)] - %s\n- Development build\n' "$$(date -u +%F)"; cat ../../CHANGELOG.md; } \
+	| LC_ALL=C awk -v rev="$(DEBIAN_PACKAGE_VERSION)" -v distro="$(distro)" ' \
+		function sign() { if (n) print "\n -- Kathara Team <contact@kathara.org>  " when "\n" }; \
+		/^\#\# \[[0-9]/ { sign(); n++; cmd = "date -u -R -d " $$4; cmd | getline when; close(cmd); \
+			print "kathara (" substr($$2, 2, length($$2) - 2) "-" rev distro ") " distro "; urgency=low\n"; next }; \
+		/^- / && n { print "  * " substr($$0, 3) }; \
+		END { sign() }'
+
 .PHONY: changelog docker-build-image prepare-deb-source unpack-deb-source clean-output-folder copy-debian-folder build-man build-deb-unsigned clean venv autocompletion
 
 
@@ -55,16 +64,10 @@ copy-debian-folder:
 		sed -i 's|python3.14-venv (>= 3.14.0)|python3.13-venv (>= 3.13.0)|g' Output/kathara-$(VERSION)/debian/control ; \
 		sed -i 's|python3.14|python3.13|g' Output/kathara-$(VERSION)/debian/rules   ; \
 	fi
-	$(MAKE) -s --no-print-directory changelog > Output/kathara-$(VERSION)/debian/changelog
+	$(CHANGELOG_CMD) > Output/kathara-$(VERSION)/debian/changelog
 
 changelog:
-	@{ grep -q '^## \[$(VERSION)\]' ../../CHANGELOG.md || printf '## [$(VERSION)] - %s\n- Development build\n' "$$(date -u +%F)"; cat ../../CHANGELOG.md; } \
-	| LC_ALL=C awk -v rev="$(DEBIAN_PACKAGE_VERSION)" -v distro="$(distro)" ' \
-		function sign() { if (n) print "\n -- Kathara Team <contact@kathara.org>  " when "\n" } \
-		/^## \[[0-9]/ { sign(); n++; cmd = "date -u -R -d " $$4; cmd | getline when; close(cmd); \
-			print "kathara (" substr($$2, 2, length($$2) - 2) "-" rev distro ") " distro "; urgency=low\n"; next } \
-		/^- / && n { print "  * " substr($$0, 3) } \
-		END { sign() }'
+	@$(CHANGELOG_CMD)
 
 venv:
 	if [ -z "$$(which python3.14)" ] ; then \
